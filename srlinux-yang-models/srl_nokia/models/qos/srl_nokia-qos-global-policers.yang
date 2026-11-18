@@ -1,0 +1,246 @@
+module srl_nokia-qos-global-policers {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:qos:qos-glb-pol";
+  prefix srl-qos-glob-poli;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+
+  typedef policer-type {
+    type enumeration {
+      enum one-rate-two-color;
+      enum two-rate-three-color;
+    }
+  }
+
+  grouping committed-rate-parameters {
+    leaf committed-rate {
+      type uint64 {
+        range "0..2700000000";
+      }
+      units "kbps";
+      description
+        "Committed information rate for the token bucket scheduler, defined in kilobits (1000 bits) per second
+
+         This value represents the rate at which tokens are added to the bucket. The maximum supported rate is 2.7 Tbps.";
+    }
+    leaf committed-burst-size {
+      type uint32 {
+        range "256..268435456";
+      }
+      units "bytes";
+      description
+        "Committed burst size for the token bucket scheduler
+
+         This value represents the depth of the token bucket. The minimum supported burst size is 256 bytes and the maximum supported burst size is 256 MB.";
+    }
+  }
+
+  grouping excess-rate-parameters {
+    leaf peak-rate {
+      type uint64 {
+        range "0..2700000000";
+      }
+      units "kbps";
+      description
+        "Peak information rate for the dual-rate token bucket policer, defined in kilobits (1000 bits) per second
+
+         This value represents the rate at which tokens are added to the secondary bucket. The maximum supported rate is 2.7 Tbps.";
+    }
+    leaf excess-burst-size {
+      type uint32 {
+        range "256..268435456";
+      }
+      units "bytes";
+      description
+        "Excess burst size for the dual-rate token bucket policer
+
+         This value represents the depth of the secondary bucket. The minimum supported burst size is 256 bytes and the maximum supported burst size is 256 MB.";
+    }
+  }
+
+  grouping conform-action-grouping {
+    container conform-action {
+      leaf conforming-packets {
+        config false;
+        type srl-comm:zero-based-counter64;
+        description
+          "Number of conforming packets.";
+      }
+      leaf conforming-octets {
+        config false;
+        type srl-comm:zero-based-counter64;
+        description
+          "Number of octets in conforming packets.";
+      }
+      description
+        "Enter the conform-action context";
+    }
+  }
+
+  grouping exceed-action-grouping {
+    container exceed-action {
+      leaf exceeding-packets {
+        config false;
+        type srl-comm:zero-based-counter64;
+        description
+          "Number of exceeding packets.";
+      }
+      leaf exceeding-octets {
+        config false;
+        type srl-comm:zero-based-counter64;
+        description
+          "Number of octets in exceeding packets.";
+      }
+      description
+        "Enter the exceed-action context";
+    }
+  }
+
+  grouping violate-action-grouping {
+    container violate-action {
+      leaf violating-packets {
+        config false;
+        type srl-comm:zero-based-counter64;
+        description
+          "Number of violating packets.";
+      }
+      leaf violating-octets {
+        config false;
+        type srl-comm:zero-based-counter64;
+        description
+          "Number of octets in violating packets.";
+      }
+      description
+        "Enter the violate-action context";
+    }
+  }
+
+  grouping global-policer-allocation-state {
+    container allocation-pending {
+      config false;
+      description
+        "Enter the allocation-pending context
+
+         Details of pending global policer resource allocation";
+      leaf-list policer {
+        config false;
+        description
+          "Complexes with pending HW policer resource allocation.
+
+           Each entry identifies a complex in the format forwarding-complex-<slot>/<complex>.";
+        type string;
+      }
+      leaf-list policer-statistics {
+        config false;
+        description
+          "Complexes with pending HW policer statistics resource allocation.
+
+           Each entry identifies a complex in the format forwarding-complex-<slot>/<complex>.";
+        type string;
+      }
+    }
+  }
+
+  grouping global-policers-top {
+    container policers {
+      description
+        "Enter the policers context
+
+         Configuration and state for global policers
+
+         A global policer is single-rate or dual-rate traffic meter that can be used to rate limit traffic by discarding or remarking non-compliant traffic. An instance of each global policer exists on every forwarding-complex and core of the system, whether traffic is directed to each instance or not.";
+      leaf discard-all-high-drop-probability {
+        if-feature "srl-feat:qos-discard-all-high-drop-probability";
+        description
+          "Defines system-wide policer behaviour with respect to treating high drop-probability packets.
+
+           When set to true, all policers will discard violating packets. As a consequence, also all packets classified by classifiers as high drop-probability will be dropped";
+        type boolean;
+        default "false";
+      }
+      list policer {
+        if-feature "srl-feat:qos-global-policers";
+        description
+          "List of global policers";
+        key "name";
+        must "(string(one-rate-two-color/committed-rate) = '' and string(one-rate-two-color/committed-burst-size) = '') or type = 'one-rate-two-color'" {
+          error-message "If one-rate-two-color is configured then type must be one-rate-two-color";
+        }
+        must "(string(two-rate-three-color/committed-rate) = '' and string(two-rate-three-color/committed-burst-size) = '' and
+              string(two-rate-three-color/peak-rate) = '' and string(two-rate-three-color/excess-burst-size) = '') or type = 'two-rate-three-color'" {
+          error-message "If two-rate-three-color is configured then type must be two-rate-three-color";
+        }
+        must "type != 'one-rate-two-color' or (string(one-rate-two-color/committed-rate) != '' and string(one-rate-two-color/committed-burst-size) != '')" {
+          error-message "committed-rate and committed-burst-size must be configured under one-rate-two-color when type is one-rate-two-color";
+        }
+        must "type != 'two-rate-three-color' or (string(two-rate-three-color/committed-rate) != '' and string(two-rate-three-color/committed-burst-size) != '' and
+              string(two-rate-three-color/peak-rate) != '' and string(two-rate-three-color/excess-burst-size) != '')" {
+          error-message "committed-rate, committed-burst-size, peak-rate, and excess-burst-size must be configured under two-rate-three-color when type is two-rate-three-color";
+        }
+        leaf name {
+          description
+            "Name of the global policer";
+          type srl-comm:name;
+        }
+        leaf type {
+          description
+            "The type of global policer";
+          type policer-type;
+          default "one-rate-two-color";
+        }
+        leaf color-aware-mode {
+          type boolean;
+          default "false";
+          description
+            "Defines operational mode of the policer - color-aware vs color-blind";
+        }
+        leaf last-clear {
+          config false;
+          type srl-comm:date-and-time-delta;
+          description
+            "Timestamp of the last time the statistics associated with this global policer were cleared.";
+        }
+        container one-rate-two-color {
+          uses committed-rate-parameters;
+          uses conform-action-grouping;
+          uses violate-action-grouping;
+          description
+            "Enter the one-rate-two-color context";
+        }
+        container two-rate-three-color {
+          uses committed-rate-parameters;
+          uses excess-rate-parameters;
+          uses conform-action-grouping;
+          uses exceed-action-grouping;
+          uses violate-action-grouping;
+          description
+            "Enter the two-rate-three-color context";
+        }
+        uses global-policer-allocation-state;
+      }
+    }
+  }
+}

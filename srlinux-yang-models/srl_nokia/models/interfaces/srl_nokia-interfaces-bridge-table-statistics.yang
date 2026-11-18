@@ -1,0 +1,96 @@
+module srl_nokia-interfaces-bridge-table-statistics {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac:interfaces-bridge-table-statistics";
+  prefix srl-ifs-brid-tbl-stat;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for bridge-table-statistics on the subinterface
+
+     Copyright 2020-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+
+  grouping bridge-table-statistics-top {
+    container statistics {
+      config false;
+      leaf active-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of entries that are active on the sub-interface.";
+        srl-exts:show-importance "high";
+      }
+      leaf total-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, active and inactive, on the sub-interface.";
+        srl-exts:show-importance "high";
+      }
+      leaf failed-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, which have not been programmed on atleast one slot";
+        srl-exts:show-importance "high";
+      }
+      list mac-type {
+        key "type";
+        description
+          "the type of the mac on the sub-interface.";
+        leaf type {
+          type srl-comm:mac-type;
+          srl-exts:show-importance "high";
+        }
+        leaf active-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of entries of this type on the sub-interface";
+          srl-exts:show-importance "high";
+        }
+        leaf total-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type , active and inactive, on the sub-interface.";
+          srl-exts:show-importance "high";
+        }
+        leaf failed-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, which have not been programmed on atleast one slot";
+          srl-exts:show-importance "high";
+        }
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:bridge-table" {
+    uses bridge-table-statistics-top;
+  }
+}

@@ -1,0 +1,86 @@
+module srl_nokia-tftp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:linux:tftp";
+  prefix srl-tftp;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines TFTP configuration
+
+     Copyright 2025-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+
+  grouping tftp-top {
+    container tftp-server {
+      presence "Configure TFTP server";
+      list network-instance {
+        description
+          "List of network instances to run a TFTP server in";
+        key "name";
+        leaf name {
+          type leafref {
+            path "/srl-netinst:network-instance/srl-netinst:name";
+          }
+          description
+            "Reference to a configured network-instance";
+        }
+        leaf admin-state {
+          type srl-comm:admin-state;
+          default "disable";
+          description
+            "Administratively enables or disables the TFTP server";
+        }
+        leaf oper-state {
+          type srl-comm:oper-state;
+          config false;
+          description
+            "Details if the server is operationally available";
+        }
+        leaf-list source-address {
+          if-feature "not srl-feat:platform-imgmt";
+          type srl-comm:ip-address;
+          description
+            "List of IP addresses for the TFTP server to listen on within the network-instance";
+        }
+        leaf root-directory {
+          type string;
+          default "/srv/tftpboot";
+          description
+            "Set the root directory of the TFTP server. If the directory needs to be synchronized to the secondary control card,
+             it is recommended to use a directory under /opt or /srv.";
+        }
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    uses tftp-top;
+    if-feature "srl-feat:tftp";
+  }
+}

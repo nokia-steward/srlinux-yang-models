@@ -1,0 +1,63 @@
+module srl_nokia-mpls-services-evpn-label-management {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:evpn:mpls-services-evpn-label-management";
+  prefix srl-mpls-serv-evpn-labe-mgmt;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-mpls-label-management {
+    prefix srl-mpls-labe-mgmt;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data for MPLS label management for EVPN in the system network-instance
+
+     Copyright 2022-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+
+  grouping mpls-services-evpn-management-top {
+    container evpn {
+      if-feature "srl-feat:evpn-mpls";
+      presence "Configure MPLS label management for EVPN in the system network-instance";
+      description
+        "Container for system wide Services EVPN MPLS label management";
+      leaf dynamic-label-block {
+        mandatory true;
+        type leafref {
+          path "/srl-sys:system/srl-mpls-labe-mgmt:mpls/srl-mpls-labe-mgmt:label-ranges/srl-mpls-labe-mgmt:dynamic/srl-mpls-labe-mgmt:name";
+        }
+        description
+          "The dynamic label block used by EVPN in the system network-instance
+
+           The label block is used by all EVPN services that require MPLS labels in the
+           system network-instance. For example, EVPN-MPLS multi-homing (ESI label).";
+      }
+    }
+  }
+
+  augment "/srl-sys:system/srl-mpls-labe-mgmt:mpls/srl-mpls-labe-mgmt:services" {
+    uses mpls-services-evpn-management-top;
+  }
+}

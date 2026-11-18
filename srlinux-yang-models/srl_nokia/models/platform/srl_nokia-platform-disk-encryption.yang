@@ -1,0 +1,74 @@
+module srl_nokia-platform-disk-encryption {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:platform-disk-encryption";
+  prefix srl-plat-disk-encr;
+
+  import srl_nokia-platform {
+    prefix srl-plat;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines operational state and actions related to Disk Encryption.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping disk-encryption-top {
+    container disk-encryption {
+      if-feature "srl-feat:disk-encryption";
+      config false;
+      description
+        "Enter the disk-encryption context
+
+         State and operational commands related to Disk Encryption";
+      list control {
+        config false;
+        key "slot";
+        description
+          "Disk Encryption for control modules";
+        leaf slot {
+          type string {
+            pattern 'A|B';
+          }
+          description
+            "Slot identifier for the control module";
+        }
+        action activate {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+          description
+            "Execute the activate action
+
+             Activate Disk Encryption for a control module";
+          output {
+            leaf message {
+              type string;
+              description
+                "Result message returned by the activate operation";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-plat:platform/srl-plat:trust" {
+    uses disk-encryption-top;
+  }
+}

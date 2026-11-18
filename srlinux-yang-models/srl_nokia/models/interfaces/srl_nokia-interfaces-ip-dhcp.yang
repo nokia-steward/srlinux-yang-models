@@ -1,0 +1,103 @@
+module srl_nokia-interfaces-ip-dhcp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:interfaces-ip-dhcp";
+  prefix srl-ifs-ip-dhcp;
+
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for managing DHCP and DHCPv6 on IP subinterfaces
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  grouping subinterface-dhcpv4 {
+    container dhcp-client {
+      presence "The subinterface attempts to obtain its IPv4 address and prefix using DHCP";
+      description
+        "Container for options related to DHCP";
+      must "(../../../srl-ifs:name = 'mgmt0' and ../../srl-ifs:index = 0) or starts-with(../../../srl-ifs:name, 'ethernet')" {
+        error-message "dhcp-client not configurable on this subinterface";
+      }
+      container trace-options {
+        description
+          "Enter the trace-options context
+
+           Container for tracing DHCPv4 operations on the subinterface";
+        leaf-list trace {
+          type enumeration {
+            enum messages {
+              description
+                "Capture all DHCPv4 messages sent and received by the subinterface";
+            }
+          }
+          description
+            "List of events to trace";
+        }
+      }
+    }
+  }
+
+  grouping subinterface-dhcpv6 {
+    container dhcp-client {
+      presence "The subinterface attempts to obtain its IPv6 address using DHCPv6";
+      description
+        "Container for options related to DHCPv6";
+      must "(../../../srl-ifs:name = 'mgmt0' and ../../srl-ifs:index = 0) or starts-with(../../../srl-ifs:name, 'ethernet')" {
+        error-message "dhcp-client not configurable on this subinterface";
+      }
+      container trace-options {
+        description
+          "Enter the trace-options context
+
+           Container for tracing DHCPv6 operations on the subinterface";
+        leaf-list trace {
+          type enumeration {
+            enum messages {
+              description
+                "Capture all DHCPv6 messages sent and received by the subinterface";
+            }
+          }
+          description
+            "List of events to trace";
+        }
+      }
+    }
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:ipv4" {
+    uses subinterface-dhcpv4;
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:ipv6" {
+    uses subinterface-dhcpv6;
+  }
+}

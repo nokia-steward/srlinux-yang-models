@@ -1,0 +1,316 @@
+module srl_nokia-bgp-evpn-bgp-instance-mpls-bridge-table-unicast-destinations {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac:bgp-evpn-bgp-instance-mpls-bridge-table-unicast-destinations";
+  prefix srl-bgp-evpn-bgp-inst-mpls-brid-tbl-unic-dest;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-bgp-evpn {
+    prefix srl-bgp-evpn;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for bridge-table unicast destinations on the bgp-evpn mpls instance
+
+     Copyright 2022-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2024-10-31 {
+    description
+      "SR Linux 24.10.1";
+  }
+  revision 2023-07-31 {
+    description
+      "SR Linux 23.7.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+
+  grouping evpn-mpls-bridge-table-statistics-top {
+    description
+      "Statistics related to the bridge-table";
+    container statistics {
+      config false;
+      leaf active-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of entries that are active on the evpn-mpls instance";
+        srl-exts:show-importance "high";
+      }
+      leaf total-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, active and inactive, on the evpn-mpls instance";
+        srl-exts:show-importance "high";
+      }
+      leaf failed-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, which have not been programmed on at least one slot";
+        srl-exts:show-importance "high";
+      }
+      list mac-type {
+        key "type";
+        description
+          "The type of the mac on the evpn-mpls instance";
+        leaf type {
+          type srl-comm:mac-type;
+          srl-exts:show-importance "high";
+        }
+        leaf active-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of entries of this type on the evpn-mpls instance";
+          srl-exts:show-importance "high";
+        }
+        leaf total-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, active and inactive, on the evpn-mpls instance";
+          srl-exts:show-importance "high";
+        }
+        leaf failed-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, which have not been programmed on at least one slot";
+          srl-exts:show-importance "high";
+        }
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping evpn-mpls-bridge-table-mac-table-top {
+    container mac-table {
+      config false;
+      list mac {
+        key "address";
+        description
+          "macs learnt on the bridging instance";
+        leaf address {
+          type srl-comm:mac-address;
+        }
+        leaf type {
+          type srl-comm:mac-type;
+          srl-exts:show-importance "high";
+          description
+            "The type of the mac installed in the fib";
+        }
+        leaf last-update {
+          type srl-comm:date-and-time-delta;
+          srl-exts:show-importance "high";
+          description
+            "The date and time of the last update of this mac";
+        }
+        leaf not-programmed-reason {
+          srl-exts:show-importance "high";
+          type enumeration {
+            enum mac-limit;
+            enum failed-on-slots;
+            enum no-destination-index;
+            enum reserved;
+          }
+          description
+            "The reason why the mac is not programmed";
+        }
+        leaf-list failed-slots {
+          srl-exts:show-importance "high";
+          type uint8 {
+            range "1..18";
+          }
+          description
+            "The list of slot IDs corresponding to the linecards that did not successfully program the mac";
+        }
+      }
+      description
+        "Enter the mac-table context";
+    }
+  }
+
+  grouping evpn-mpls-unicast-bridge-table-statistics-top {
+    container statistics {
+      config false;
+      leaf active-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of entries that are active on the sub-interface";
+        srl-exts:show-importance "high";
+      }
+      leaf total-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, active and inactive, on the sub-interface";
+        srl-exts:show-importance "high";
+      }
+      leaf failed-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, which have not been programmed on atleast one slot";
+        srl-exts:show-importance "high";
+      }
+      list mac-type {
+        key "type";
+        description
+          "the type of the mac on the sub-interface.";
+        leaf type {
+          type srl-comm:mac-type;
+          srl-exts:show-importance "high";
+        }
+        leaf active-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of entries of this type on the sub-interface";
+          srl-exts:show-importance "high";
+        }
+        leaf total-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, active and inactive, on the sub-interface";
+          srl-exts:show-importance "high";
+        }
+        leaf failed-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, which have not been programmed on atleast one slot";
+          srl-exts:show-importance "high";
+        }
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping evpn-mpls-bridge-table-unicast-destinations-destination-top {
+    list destination {
+      config false;
+      key "tep evi-label tunnel-id";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP)";
+      }
+      leaf evi-label {
+        type srl-comm:mpls-label-non-reserved;
+        srl-exts:show-importance "high";
+        description
+          "EVI label of the destination";
+      }
+      leaf tunnel-id {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "tunnel identitier of the destination.";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-mpls destination object (system allocated)";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+        }
+        description
+          "The reason why the evpn-mpls destination is not programmed";
+      }
+      uses evpn-mpls-unicast-bridge-table-statistics-top;
+      uses evpn-mpls-bridge-table-mac-table-top;
+    }
+  }
+
+  grouping evpn-mpls-bridge-table-es-destination-next-hops-top {
+    list destination {
+      config false;
+      key "tep evi-label tunnel-id";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP)";
+      }
+      leaf evi-label {
+        type srl-comm:mpls-label-non-reserved;
+        srl-exts:show-importance "high";
+        description
+          "EVI label of the destination.";
+      }
+      leaf tunnel-id {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "tunnel identitier of the next-hop.";
+      }
+    }
+  }
+
+  grouping evpn-mpls-bridge-table-unicast-destinations-es-destination-top {
+    list es-destination {
+      config false;
+      key "esi";
+      leaf esi {
+        type srl-comm:esi;
+        srl-exts:show-importance "high";
+        description
+          "The 10-byte Ethernet Segment Identifier of the ethernet segment.
+           ESI-0 or MAX-ESI values are not allowed.";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-mpls destination object (system allocated)";
+      }
+      uses evpn-mpls-bridge-table-es-destination-next-hops-top;
+      uses evpn-mpls-unicast-bridge-table-statistics-top;
+      uses evpn-mpls-bridge-table-mac-table-top;
+    }
+  }
+
+  grouping evpn-mpls-bridge-table-unicast-destinations-top {
+    container unicast-destinations {
+      config false;
+      uses evpn-mpls-bridge-table-unicast-destinations-destination-top;
+      uses evpn-mpls-bridge-table-unicast-destinations-es-destination-top;
+      description
+        "Enter the unicast-destinations context";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-netinst:bgp-evpn/srl-bgp-evpn:bgp-instance/srl-bgp-evpn:mpls/srl-bgp-evpn:bridge-table" {
+    uses evpn-mpls-bridge-table-unicast-destinations-top;
+  }
+}

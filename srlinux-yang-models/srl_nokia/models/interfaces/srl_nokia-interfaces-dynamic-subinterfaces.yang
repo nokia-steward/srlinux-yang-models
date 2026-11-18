@@ -1,0 +1,217 @@
+module srl_nokia-interfaces-dynamic-subinterfaces {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:active-vlan-detection:interfaces-dynamic-subinterfaces";
+  prefix srl-ifs-dyna-subi;
+
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-interfaces-vlans {
+    prefix srl-ifs-vlan;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file models configuration and state of the active VLAN detection and dynamic subinterfaces
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+
+  typedef vlan-id {
+    type uint16 {
+      range "1..4094";
+    }
+    description
+      "Type definition representing a VLAN identifier";
+  }
+
+  typedef retention-refresh-type {
+    type enumeration {
+      enum ingress-stats {
+        value 0;
+        description
+          "Refresh the retention timer only when ingress subinterface counters change
+
+           Egress traffic on the dynamic subinterface, including BUM frames from other
+           hosts in the same bridge domain, does not keep the VLAN in active-vlans.";
+      }
+      enum ingress-and-egress-stats {
+        value 1;
+        description
+          "Refresh the retention timer when ingress or egress subinterface counters change
+
+           This behavior supports silent hosts that receive little
+           ingress traffic but still have egress activity.";
+      }
+    }
+    description
+      "Type definition with enumerations describing which subinterface counters refresh the retention timer for active VLANs";
+  }
+
+  grouping dynamic-subinterface-vlan-range {
+    description
+      "Specifies a range of VLAN identifiers for dynamic subinterfaces";
+    container vlan-range {
+      description
+        "Enter the vlan-range context
+
+         Specifies a range of VLAN identifiers for dynamic subinterfaces";
+      container untagged {
+        if-feature "srl-feat:bridged";
+        presence "Match untagged packets";
+        description
+          "Match untagged packets for the creation of dynamic subinterfaces";
+        must '(../../../srl-ifs-vlan:vlan-tagging = true())' {
+          error-message "untagged only configurable if vlan-tagging enabled on parent interface";
+        }
+      }
+      container single-tagged {
+        presence "Match single-tagged packets";
+        description
+          "Match single-tagged packets for the creation of dynamic subinterfaces";
+        must '(../../../srl-ifs-vlan:vlan-tagging = true())' {
+          error-message "single-tagged only configurable if vlan-tagging enabled on parent interface";
+        }
+        list low-vlan-id {
+          min-elements 1;
+          max-elements 1;
+          key "range-low-vlan-id";
+          leaf range-low-vlan-id {
+            type vlan-id;
+            description
+              "The low-value VLAN identifier in a range for single-tagged packets
+
+               The range is matched inclusively.";
+          }
+          leaf high-vlan-id {
+            type vlan-id;
+            description
+              "The high-value VLAN identifier in a range for single-tagged packets
+
+               The range is matched inclusively.";
+            must '( . >= ../range-low-vlan-id)' {
+              error-message "high-vlan-id must be greater than or equal to low-vlan-id";
+            }
+            mandatory true;
+          }
+        }
+      }
+    }
+  }
+
+  grouping dynamic-subinterface-top {
+    description
+      "Top-level configuration and state for dynamic subinterfaces";
+    container dynamic-subinterfaces {
+      if-feature "srl-feat:dynamic-subinterfaces";
+      presence "Enables dynamic subinterfaces on the interface";
+      must "starts-with(../srl-ifs:name, 'ethernet') or starts-with(../srl-ifs:name, 'lag')" {
+        error-message "Dynamic subinterfaces can only be created on ethernet or lag interfaces";
+      }
+      description
+        "Dynamic subinterface configuration and state";
+      uses dynamic-subinterface-vlan-range;
+      leaf retention-timer {
+        type uint16 {
+          range "1..65535";
+        }
+        units "minutes";
+        default "240";
+        description
+          "The inactivity period after which the configuration for the corresponding VLAN is removed";
+      }
+      leaf retention-refresh {
+        type retention-refresh-type;
+        default "ingress-and-egress-stats";
+        description
+          "Controls whether ingress or egress subinterface counter changes refresh the retention timer for active VLANs
+
+           When ingress-and-egress-stats is configured, any change to ingress or egress
+           subinterface counters refreshes the retention timer.
+           When ingress-stats is configured, only ingress subinterface counter changes refresh the
+           retention timer; egress BUM traffic does not prevent VLAN aging.";
+      }
+      action clear-retention-timer {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-vlan-detection-mgr";
+        description
+          "Execute the clear-retention-timer action
+
+           Clear the retention-timer for the VLAN scope selected (a specific VLAN, untagged traffic, or all VLANs)
+
+           Normally, a VLAN remains in the active-vlans list until its retention timer expires after traffic
+           ceases. This action clears that timer, causing any VLAN currently marked as active, due to
+           frames observed on the interface, to be removed from active-vlans immediately. This command does
+           not remove a VLAN from the active-vlans list if it was created as a result of the existence of
+           an Ethernet Segment destination.";
+        input {
+          leaf active-vlan-id {
+            description
+              "The active vlan-id(s) on the interface configured for dynamic subinterfaces";
+            mandatory true;
+            type union {
+              type uint16 {
+                range "1..4094";
+              }
+              type enumeration {
+                enum untagged {
+                  value 0;
+                  description
+                    "Untagged traffic";
+                }
+                enum all {
+                  value 4095;
+                  description
+                    "All VLANs on vlan-range configured for dynamic subinterfaces";
+                }
+              }
+            }
+          }
+        }
+      }
+      leaf-list active-vlans {
+        config false;
+        type union {
+          type vlan-id;
+          type enumeration {
+            enum untagged {
+              value 0;
+            }
+          }
+        }
+        description
+          "The active VLAN identifiers for the creation of dynamic subinterfaces";
+        srl-exts:show-importance "high";
+      }
+    }
+  }
+
+  augment "/srl-ifs:interface" {
+    description
+      "Active VLAN detection and dynamic subinterfaces configuration and state";
+    uses dynamic-subinterface-top;
+  }
+}

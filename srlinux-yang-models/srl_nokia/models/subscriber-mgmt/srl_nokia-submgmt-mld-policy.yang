@@ -1,0 +1,345 @@
+module srl_nokia-submgmt-mld-policy {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:submgmt:mld-policy";
+  prefix srl-submgmt-mld-poli;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-routing-policy {
+    prefix srl-rpol;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-qos {
+    prefix srl-qos;
+  }
+  import srl_nokia-submgmt {
+    prefix srl-submgmt;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file models configuration and state of the MLD protocol
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  typedef mld-version {
+    type uint8 {
+      range "1..2";
+    }
+    description
+      "mld Version.";
+    reference
+      "v1 = RFC2710, v2 = RFC3810";
+  }
+
+  typedef mld-interval-type {
+    type uint32;
+    units "seconds";
+    description
+      "Interval at which the router sends the MLD query message toward
+       the upstream neighbor.";
+    reference
+      "RFC3810 9.2 Page 50";
+  }
+
+  grouping mld-policy-key {
+    leaf policy-name {
+      description
+        "MLD policy name.";
+      type srl-comm:name;
+    }
+  }
+
+  typedef default-policy-type {
+    type enumeration {
+      enum accept {
+        description
+          "Accept all non-matching routes";
+      }
+      enum reject {
+        description
+          "Reject all non-matching routes";
+      }
+    }
+    description
+      "Type used to specify the processing for routes not matched by any of the applicable policies";
+  }
+
+  grouping mld-import-policy {
+    leaf-list import-policy {
+      description
+        "Import policies applied before the final policy.
+         Evaluation order among these entries is implementation-defined.";
+      ordered-by user;
+      max-elements 14;
+      type leafref {
+        path "/srl-rpol:routing-policy/srl-rpol:policy/srl-rpol:name";
+      }
+    }
+    leaf default-import-policy {
+      description
+        "Final import policy. Always evaluated after all entries in
+         import-policy. This policy provides the final accept/reject
+         decision when earlier policies are non-terminating.";
+      type default-policy-type;
+    }
+  }
+
+  grouping multicast-redirection-policy {
+    leaf multicast-redirection-policy {
+      description
+        "Apply an multicast redirction policy.  The lenght of the policy name should not exceed 32 charachters";
+      type leafref {
+        path "/srl-rpol:routing-policy/srl-rpol:policy/srl-rpol:name";
+      }
+    }
+  }
+
+  grouping egress-rate-modify {
+    container egress-rate-modify {
+      description
+        "Enter the egress-rate-modify context
+
+         Selection of the egress rate modification for unicast traffic";
+      must './agg-rate or ./queue-scheduling-policy' {
+        error-message "When egress-rate-modify is configured, either agg-rate or queue-scheduling-policy must be set";
+      }
+      choice type {
+        case agg-rate {
+          leaf agg-rate {
+            description
+              "Apply egress rate modification on aggregated rate";
+            type empty;
+          }
+        }
+        case scheduler {
+          leaf queue-scheduling-policy {
+            if-feature "srl-feat:qos and srl-feat:qos-queue-scheduling-policy";
+            description
+              "Reference to the name of queue-scheduling-policy
+
+               Such policy can contain only tier-1 scheduler definitions";
+            type leafref {
+              path "/srl-qos:qos/srl-qos:scheduler-policies/srl-qos:queue-scheduling-policy/srl-qos:name";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping mld-policy-config {
+    description
+      "MLD specific configuration";
+    leaf query-interval {
+      description
+        "Interval at which the router sends the MLD membership queries";
+      type mld-interval-type {
+        range "2..1024";
+      }
+      default "125";
+      must '. > ../query-response-interval' {
+        error-message "query-response-interval must be less than query-interval";
+      }
+      must '. > ../query-last-member-interval' {
+        error-message "query-last-member-interval must be less than query-interval";
+      }
+    }
+    leaf query-last-member-interval {
+      description
+        "Interval at which Group-Specific-Query packets are transmitted";
+      type mld-interval-type {
+        range "1..1023";
+      }
+      default "1";
+    }
+    leaf query-response-interval {
+      description
+        "Time to wait to receive a response to the MLD membership query from the host";
+      type mld-interval-type {
+        range "1..1023";
+      }
+      default "10";
+    }
+    leaf robust-count {
+      description
+        "Tune mld robustness to allow for expected packet loss
+
+         The robust-count variable allows tuning for the expected packet
+         loss on a subnet. If a subnet anticipates losses, the robust-count
+         variable can be increased.";
+      type uint32 {
+        range "2..10";
+      }
+      default "2";
+    }
+    leaf use-multicast-destination-mac {
+      description
+        "Ensures that the multicast packet using a multicast destination MACaddress instead of the host MAC address";
+      type boolean;
+      default "true";
+    }
+    leaf fast-leave {
+      description
+        "Enable or disable mld-fast-leave";
+      type boolean;
+      default "false";
+    }
+    leaf replication-mode {
+      description
+        "Select the replication mode";
+      type enumeration {
+        enum per-host {
+          value 1;
+        }
+        enum per-sub-interface {
+          value 2;
+        }
+      }
+      default "per-sub-interface";
+    }
+    leaf version {
+      description
+        "MLD Version";
+      type mld-version;
+      default "2";
+    }
+    leaf router-alert-check {
+      description
+        "Enable or disable router alert checking for MLD messages received on this interface";
+      type boolean;
+      default "true";
+    }
+    leaf maximum-number-groups {
+      description
+        "MAX number of MLD Groups for this interface, 0 means no limit";
+      type uint32 {
+        range "1..4096";
+      }
+    }
+    leaf maximum-number-sources {
+      description
+        "MAX number of MLD sources per group for this interface, 0 means no limit";
+      type uint32 {
+        range "1..512";
+      }
+    }
+    leaf maximum-number-group-sources {
+      description
+        "MAX number of MLD group/source combinations for this interface, 0 means no limit";
+      type uint32 {
+        range "1..4096";
+      }
+    }
+    uses mld-import-policy;
+    uses multicast-redirection-policy;
+    uses egress-rate-modify;
+    container static-membership-groups {
+      presence "Enable egress rate modification";
+      description
+        "Enter the static-membership-groups context
+
+         Container to configure static <S,G>s for this interface";
+      list group {
+        key "group-address";
+        description
+          "Static multicast group membership";
+        leaf group-address {
+          type srl-comm:ipv6-address;
+          description
+            "Multicast group address (G)";
+          must "starts-with(.,'ff')" {
+            error-message "Not a valid IPv6 multicast address";
+          }
+          must "not(starts-with(.,'ff01') or starts-with(.,'ff02'))" {
+            error-message "Must not be a link-local or node-local multicast address";
+          }
+        }
+        choice source-or-starg {
+          mandatory true;
+          case source {
+            list source {
+              description
+                "Multicast source address list";
+              key "source";
+              leaf source {
+                type srl-comm:ipv6-address;
+                description
+                  "Multicast source address (S)";
+                must "not(.='::/128' or .='::1/128' or starts-with(.,'ff') or starts-with(.,'fe80'))" {
+                  error-message "Not a global unicast IPv6 address";
+                }
+              }
+            }
+          }
+          case starg {
+            leaf starg {
+              description
+                "any source address (*,G)";
+              type empty;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping mld-policy-state {
+    container association {
+      config false;
+      description
+        "Enter the association context
+
+         Used to report operational state of the MLD instance";
+      list subscriber {
+        key "subscriber-name";
+        max-elements 32768;
+        description
+          "List of subscribers";
+        leaf subscriber-name {
+          type srl-comm:name;
+          description
+            "Name of  subscriber";
+        }
+      }
+      leaf total-host {
+        config false;
+        type srl-comm:zero-based-counter64;
+        description
+          "Total number of subscribers associated to this MLD policy";
+      }
+    }
+  }
+
+  grouping mld-policy-top {
+    container mld-policy {
+      if-feature "srl-feat:submgmt-mld-policy";
+      presence "Configure mld policy for subscriber management";
+      list policy {
+        description
+          "Configure MLD policy.";
+        key "policy-name";
+        uses mld-policy-key;
+        uses mld-policy-config;
+        uses mld-policy-state;
+      }
+    }
+  }
+
+  augment "/srl-submgmt:subscriber-management" {
+    uses mld-policy-top;
+  }
+}

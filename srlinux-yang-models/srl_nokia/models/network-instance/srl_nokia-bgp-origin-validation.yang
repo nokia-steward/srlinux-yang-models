@@ -1,0 +1,361 @@
+module srl_nokia-bgp-origin-validation {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:bgp:origin-validation";
+  prefix srl-bgp-orig-vali;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-bgp {
+    prefix srl-bgp;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "BGP RPKI origin-validation consumption: origin-validation
+     enablement, best path selection knobs, and per-AFI-SAFI
+     origin-validation statistics.
+
+     RPKI (Resource Public Key Infrastructure) Origin Validation
+     validates that the AS announcing a BGP route is authorized to
+     originate that prefix, using Route Origin Authorization (ROA)
+     objects maintained by the RPKI manager process.
+
+     Scope of this module (owned by BGP process):
+     - Aggregate BGP-level origin-validation statistics.
+     - Best path selection knobs (compare-origin-validation-state,
+       origin-invalid-unusable) augmented into the existing
+       best-path-selection container.
+     - Per-AFI-SAFI origin-validation admin-state and statistics
+       augmented at the BGP instance, peer-group, and neighbor levels.
+     - Per-route origin-validation-state is exposed directly in
+       srl_nokia-rib-bgp.yang via the state-common-key grouping,
+       gated by the bgp-rpki-origin-validation feature flag.
+
+     The ROA database state is not present in this module. The
+     authoritative YANG representation of the ROA database lives in
+     srl_nokia-bgp-rpki.yang as per-session roa-entry lists owned by
+     the rpkimgr process. Aggregate database counts are derivable from
+     the per-session entry lists and the static-roa configuration list.
+     The BGP process consumes the database via the RPKI library API
+     and is agnostic of per-session attribution.
+
+     Origin validation admin-state is independently configured at the
+     BGP instance, peer-group, and neighbor levels per AFI-SAFI.
+     No inheritance applies between levels. Each scope requires
+     explicit admin-state enable. This is consistent with SR OS and
+     is an intentional deviation from the standard SR Linux
+     configuration inheritance model.
+
+     Related modules:
+     - srl_nokia-bgp-rpki-types.yang: shared type definitions.
+     - srl_nokia-bgp-rpki.yang: rpkimgr-process-owned module covering
+       RPKI-RTR session management, static ROA configuration, and
+       per-session ROA entry state.
+
+     All augments in this module are gated by the
+     bgp-rpki-origin-validation feature flag.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping rpki-ov-statistics {
+    description
+      "Reusable origin validation prefix counters
+
+       Applied at multiple scopes: BGP instance aggregate,
+       BGP instance per-AFI-SAFI, and per-neighbor per-AFI-SAFI.
+       Counters reflect the current state of routes in the relevant
+       RIB scope, not cumulative event counts.";
+    container statistics {
+      config false;
+      description
+        "Enter the statistics context
+
+         Origin validation prefix counts for this scope.
+         Counts reflect routes whose origin-validation-state has
+         been determined by lookup against the local ROA database.
+         Routes with origin validation disabled are not counted.";
+      leaf valid-prefixes {
+        type srl-comm:counter64;
+        description
+          "Number of prefixes with origin-validation-state valid
+
+           The route prefix matched a ROA entry with a matching
+           origin AS and acceptable prefix-length.";
+      }
+      leaf invalid-prefixes {
+        type srl-comm:counter64;
+        description
+          "Number of prefixes with origin-validation-state invalid
+
+           The route prefix matched a ROA entry but either the
+           origin AS did not match or the prefix-length exceeded
+           the ROA max-prefix-length.";
+      }
+      leaf not-found-prefixes {
+        type srl-comm:counter64;
+        description
+          "Number of prefixes with origin-validation-state not-found
+
+           No matching ROA entry exists for the route prefix in the
+           local ROA database.";
+      }
+      leaf last-updated {
+        type srl-comm:date-and-time;
+        description
+          "Timestamp of the most recent change to any origin-validation-state
+           counter in this statistics scope
+
+           Updated whenever a prefix transitions between valid, invalid,
+           or not-found states. Not present if no origin validation has
+           been performed in this scope since the last statistics reset.";
+      }
+    }
+  }
+
+  grouping rpki-best-path-selection {
+    description
+      "RPKI-related knobs for the BGP best path selection algorithm";
+    leaf compare-origin-validation-state {
+      type boolean;
+      default "false";
+      description
+        "Compare origin-validation-state as a step in best path selection
+
+         When set to true, origin-validation-state is compared as an
+         additional step immediately before the LOCAL_PREF comparison.
+         Routes with state valid are preferred over routes with state
+         not-found, which are preferred over routes with state invalid.
+
+         This provides a traffic-engineering mechanism to prefer
+         RPKI-validated paths without requiring route policy.";
+    }
+    leaf origin-invalid-unusable {
+      type boolean;
+      default "false";
+      description
+        "Treat routes with invalid origin-validation-state as unusable
+
+         When set to true, routes whose origin-validation-state is
+         invalid are excluded from best path selection and are not
+         used for forwarding. The routes remain in the RIB-IN for
+         visibility but are marked unusable.
+
+         This is the enforcement mode for RPKI origin validation.
+         It is recommended to deploy with compare-origin-validation-state
+         first in monitoring mode before enabling this knob.";
+    }
+  }
+
+  grouping rpki-origin-validation-aggregate {
+    description
+      "BGP instance-level aggregate origin validation statistics
+
+       Provides a global view of origin-validation-state distribution
+       across all address families and all neighbors where origin
+       validation is enabled.";
+    container origin-validation {
+      config false;
+      description
+        "Enter the origin-validation context
+
+         Aggregate origin validation statistics across all address
+         families and neighbors for this BGP instance.";
+      uses rpki-ov-statistics;
+    }
+  }
+
+  grouping rpki-group-afi-safi-ov {
+    description
+      "Per-AFI-SAFI origin validation enablement for peer-groups
+
+       Origin validation admin-state at the peer-group level is
+       independently evaluated from the neighbor level. Enabling
+       origin validation here does not automatically enable it for
+       member neighbors. Each neighbor requires explicit admin-state
+       enable configuration. This behavior is consistent with SR OS
+       and is an intentional deviation from the standard SR Linux
+       configuration inheritance model.";
+    container origin-validation {
+      description
+        "Enter the origin-validation context
+
+         Origin validation configuration for this peer-group AFI-SAFI";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "Enable or disable origin validation for this peer-group AFI-SAFI
+
+           When enabled, routes received from neighbors explicitly
+           configured with origin validation enabled for this address
+           family are validated against the local ROA database.
+
+           Enabling at the peer-group level does not automatically
+           enable origin validation for member neighbors. Each neighbor
+           requires explicit admin-state enable at the neighbor
+           AFI-SAFI level. This is consistent with SR OS behavior.
+
+           Defaults to disable. Origin validation is explicitly opt-in
+           per scope per address family.";
+      }
+      uses rpki-ov-statistics;
+    }
+  }
+
+  grouping rpki-neighbor-afi-safi-ov {
+    description
+      "Per-neighbor per-AFI-SAFI origin validation configuration
+       and statistics
+
+       Origin validation admin-state at the neighbor level is
+       independently evaluated. It is not inherited from the
+       peer-group level. Each neighbor requires explicit
+       admin-state enable configuration. This behavior is
+       consistent with SR OS and is an intentional deviation
+       from the standard SR Linux configuration inheritance model.";
+    container origin-validation {
+      description
+        "Enter the origin-validation context
+
+         Origin validation configuration and statistics for this
+         neighbor AFI-SAFI.";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "Enable or disable origin validation for this neighbor AFI-SAFI
+
+           When enabled, routes received from this neighbor for this
+           address family are validated against the local ROA database
+           and the origin-validation-state is set on each received route.
+
+           This leaf is independently evaluated and is not inherited
+           from the peer-group or BGP instance level. Explicit
+           configuration is required at this level regardless of
+           peer-group settings. This is consistent with SR OS behavior.
+
+           Defaults to disable. Primarily intended for EBGP sessions;
+           enablement on IBGP sessions is not blocked but is not the
+           typical deployment model.";
+      }
+      uses rpki-ov-statistics;
+    }
+  }
+
+  grouping rpki-bgp-afi-safi-ov {
+    description
+      "Per-AFI-SAFI origin validation configuration and statistics
+       at the BGP instance level
+
+       Provides instance-wide origin validation enablement and
+       aggregate statistics per address family. Admin-state at this
+       level is independently evaluated and does not automatically
+       propagate to peer-group or neighbor levels.";
+    container origin-validation {
+      description
+        "Enter the origin-validation context
+
+         Origin validation configuration and statistics for this
+         BGP instance AFI-SAFI.";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "Enable or disable origin validation for this AFI-SAFI
+           at the BGP instance level
+
+           Enabling here does not automatically enable origin
+           validation at the peer-group or neighbor level. Each
+           scope requires explicit admin-state enable configuration.
+           This is consistent with SR OS behavior and is an
+           intentional deviation from the standard SR Linux
+           configuration inheritance model.
+
+           Defaults to disable. Origin validation is explicitly
+           opt-in per address family.";
+      }
+      uses rpki-ov-statistics;
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp" {
+    description
+      "Add BGP instance-level aggregate origin-validation statistics
+       under the BGP protocol container
+
+       The roa-database summary container is not present here. The
+       ROA database authoritative YANG representation lives in
+       srl_nokia-bgp-rpki.yang as per-session roa-entry lists owned
+       by rpkimgr. Aggregate counts are derivable by operators from
+       the per-session entry lists and the static-roa configuration
+       list. The BGP process consumes the database via the RPKI
+       library API and is agnostic of per-session attribution.";
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses rpki-origin-validation-aggregate;
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:best-path-selection" {
+    description
+      "Add RPKI origin validation knobs to the BGP best path
+       selection configuration container
+
+       These leaves are augmented alongside existing best path
+       selection knobs such as always-compare-med and
+       ignore-router-id.";
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses rpki-best-path-selection;
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:neighbor/srl-bgp:afi-safi" {
+    description
+      "Add origin-validation admin-state and per-neighbor per-AFI-SAFI
+       statistics under the BGP neighbor AFI-SAFI container
+
+       Admin-state here is independently evaluated and is not inherited
+       from the peer-group or BGP instance level. Explicit configuration
+       is required at this level.";
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses rpki-neighbor-afi-safi-ov;
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:group/srl-bgp:afi-safi" {
+    description
+      "Add origin-validation admin-state under the BGP peer-group
+       AFI-SAFI container
+
+       Admin-state here is independently evaluated and does not
+       automatically enable origin validation for member neighbors.
+       Each neighbor requires explicit configuration.";
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses rpki-group-afi-safi-ov;
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:afi-safi" {
+    description
+      "Add origin-validation admin-state and per-AFI-SAFI statistics
+       at the BGP instance level
+
+       Provides instance-wide defaults and aggregate statistics per
+       address family. Overridden by peer-group or neighbor level
+       configuration.";
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses rpki-bgp-afi-safi-ov;
+  }
+}

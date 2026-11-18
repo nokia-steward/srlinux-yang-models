@@ -1,0 +1,97 @@
+module srl_nokia-tunnel-termination-programming-errors {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:fib:tunnel-termination-programming-errors";
+  prefix srl-tunn-term-prog-erro;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-ip-route-tables {
+    prefix srl-ip-rout-tbls;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-programming-errors {
+    prefix srl-prog-erro;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module provides detailed information about tunnel-termination
+     hardware programming errors within a particular network instance.
+     It augments the programming-errors container.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping tunnel-termination-programming-errors-top {
+    description
+      "Top-level grouping for tunnel-termination hardware programming errors";
+    container tunnel-termination {
+      if-feature "srl-feat:programming-errors-tunnel-termination-vxlan";
+      description
+        "Enter the tunnel-termination context
+
+         Information about tunnel-termination hardware programming errors. Only failed entries are reported. Additional encapsulation types may be added in a future release.";
+      container vxlan {
+        description
+          "Enter the vxlan context
+
+           Failed VXLAN tunnel-termination programming entries. When source-vtep-security is enabled, each entry is a specific destination and source IP pair. When source-vtep-security is disabled, dest-ip is the loopback IP used for termination and src-ip is the all-zeros wildcard address (0.0.0.0 or ::).";
+        list failed-entry {
+          key "dest-ip src-ip";
+          description
+            "List of failed VXLAN tunnel-termination entries
+
+             An entry is present when programming of the corresponding VXLAN tunnel-termination failed on the identified linecard forwarding complex, typically due to insufficient shared tunnel-termination resources. Linecard and complex are list keys so they can be specified or wildcarded when fetching state or creating a telemetry subscription.";
+          leaf dest-ip {
+            type srl-comm:ip-address;
+            description
+              "Destination IP address matched by the failed termination entry
+
+               This is the local VTEP or loopback IP address that incoming VXLAN packets destined to this network-instance would match.";
+          }
+          leaf src-ip {
+            type srl-comm:ip-address;
+            description
+              "Source IP address matched by the failed termination entry
+
+               When source-vtep-security is enabled this is the remote VTEP IP address. When source-vtep-security is disabled this is the all-zeros wildcard address (0.0.0.0 or ::), representing any source.";
+          }
+          leaf-list last-failed-complexes {
+            description
+              "List of forwarding complexes that reported a failure for the last operation. They appear in the format (slot-number,complex-number).";
+            type srl-ip-rout-tbls:failed-complex-list-including-control;
+          }
+          leaf time {
+            type srl-comm:date-and-time-delta;
+            description
+              "Time of the most recent tunnel-termination programming error reported for this entry
+
+               This is the highest timestamp reported across all forwarding complexes that currently have a failure for this destination and source IP pair.";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-prog-erro:programming-errors" {
+    description
+      "Augment the programming-errors container with tunnel-termination
+       hardware programming errors.";
+    uses tunnel-termination-programming-errors-top;
+  }
+}

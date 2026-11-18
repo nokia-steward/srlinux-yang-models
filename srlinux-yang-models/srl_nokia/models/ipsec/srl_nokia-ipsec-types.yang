@@ -1,0 +1,214 @@
+module srl_nokia-ipsec-types {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:ipsec:ipsec-types";
+  prefix srl-ipse-type;
+
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Common IPsec management data types
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  identity key-exchange-algorithms {
+    description
+      "Base identity for key exchange algorithms";
+  }
+
+  identity ike-sa-encryption-algorithms {
+    description
+      "Base identity for IKE SA encryption algorithms";
+  }
+
+  identity ike-sa-integrity-algorithms {
+    description
+      "Base identity for IKE SA integrity algorithms";
+  }
+
+  identity prf-algorithms {
+    description
+      "Base identity for IKE SA pseudorandom function algorithms";
+  }
+
+  identity child-sa-integrity-algorithms {
+    description
+      "Base identity for CHILD SA integrity algorithms";
+  }
+
+  identity child-sa-encryption-algorithms {
+    description
+      "Base identity for CHILD SA encryption algorithms. Only AES-GCM is supported.";
+  }
+
+  identity aead-encryption-algorithm {
+    description
+      "Base identity for authenticated encryption with associated data (AEAD) algorithms";
+  }
+
+  identity group-14 {
+    base key-exchange-algorithms;
+    description
+      "Diffie-Hellman group 14 (2048-bit MODP)";
+  }
+
+  identity group-15 {
+    base key-exchange-algorithms;
+    description
+      "Diffie-Hellman group 15 (3072-bit MODP)";
+  }
+
+  identity group-19 {
+    base key-exchange-algorithms;
+    description
+      "Diffie-Hellman group 19 (256-bit random ECP)";
+  }
+
+  identity group-20 {
+    base key-exchange-algorithms;
+    description
+      "Diffie-Hellman group 20 (384-bit random ECP)";
+  }
+
+  identity group-21 {
+    base key-exchange-algorithms;
+    description
+      "Diffie-Hellman group 21 (521-bit random ECP)";
+  }
+
+  identity des-3 {
+    base ike-sa-encryption-algorithms;
+    description
+      "Triple-DES encryption algorithm";
+  }
+
+  identity aes128-cbc {
+    base ike-sa-encryption-algorithms;
+    description
+      "AES-128 in CBC mode encryption algorithm";
+  }
+
+  identity aes192-cbc {
+    base ike-sa-encryption-algorithms;
+    description
+      "AES-192 in CBC mode encryption algorithm";
+  }
+
+  identity aes256-cbc {
+    base ike-sa-encryption-algorithms;
+    description
+      "AES-256 in CBC mode encryption algorithm";
+  }
+
+  identity aes128-gcm8 {
+    base aead-encryption-algorithm;
+    base ike-sa-encryption-algorithms;
+    base child-sa-encryption-algorithms;
+    description
+      "AES-128 in GCM mode with 8-byte ICV encryption algorithm";
+  }
+
+  identity aes128-gcm16 {
+    base aead-encryption-algorithm;
+    base ike-sa-encryption-algorithms;
+    base child-sa-encryption-algorithms;
+    description
+      "AES-128 in GCM mode with 16-byte ICV encryption algorithm";
+  }
+
+  identity aes256-gcm8 {
+    base aead-encryption-algorithm;
+    base ike-sa-encryption-algorithms;
+    base child-sa-encryption-algorithms;
+    description
+      "AES-256 in GCM mode with 8-byte ICV encryption algorithm";
+  }
+
+  identity aes256-gcm16 {
+    base aead-encryption-algorithm;
+    base ike-sa-encryption-algorithms;
+    base child-sa-encryption-algorithms;
+    description
+      "AES-256 in GCM mode with 16-byte ICV encryption algorithm";
+  }
+
+  identity sha-1 {
+    base ike-sa-integrity-algorithms;
+    base prf-algorithms;
+    description
+      "SHA-1 integrity and pseudorandom function algorithm";
+  }
+
+  identity sha-256 {
+    base ike-sa-integrity-algorithms;
+    base prf-algorithms;
+    description
+      "SHA-256 integrity and pseudorandom function algorithm";
+  }
+
+  identity sha-384 {
+    base ike-sa-integrity-algorithms;
+    base prf-algorithms;
+    description
+      "SHA-384 integrity and pseudorandom function algorithm";
+  }
+
+  identity sha-512 {
+    base ike-sa-integrity-algorithms;
+    base prf-algorithms;
+    description
+      "SHA-512 integrity and pseudorandom function algorithm";
+  }
+
+  identity aes-xcbc {
+    base ike-sa-integrity-algorithms;
+    base prf-algorithms;
+    description
+      "AES-XCBC integrity and pseudorandom function algorithm";
+  }
+
+  identity auth-encryption {
+    base ike-sa-integrity-algorithms;
+    base child-sa-integrity-algorithms;
+    description
+      "Authentication provided by the encryption algorithm (AEAD); no separate integrity transform needed";
+  }
+
+  identity same-as-auth {
+    base prf-algorithms;
+    description
+      "Use the same algorithm as the integrity (authentication) transform for the pseudorandom function";
+  }
+
+  typedef lifetime {
+    type uint32 {
+      range "1200..31536000";
+    }
+    units "seconds";
+    description
+      "Lifetime for IKE SA or CHILD SA";
+  }
+
+  typedef ipsec-secret {
+    type string;
+    srl-exts:generated-class-name "SecretKey";
+    description
+      "This is used for IPsec secrets like pre-shared keys. The system stores these passwords in encrypted form and always returns the encrypted string when management server reads a leaf of this type.
+
+       When configuring a leaf of this type, the entered string can be a cleartext password, a hex encoded password starts with '0x' or an encrypted/hashed password. An encrypted password is recognized when the string starts with a '$' character and has two further '$' characters to separate the encoding of the algorithm and the
+       encoding of the salt from the actual encrypted data. Any other text string is interpreted as cleartext.
+       the max length input psk (after decode/decryption) is limited to 256 characters";
+  }
+}

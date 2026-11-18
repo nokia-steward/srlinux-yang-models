@@ -1,0 +1,46 @@
+module srl_nokia-tools-dhcp-relay {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:dhcp-relay:tools-dhcp-relay";
+  prefix srl-tool-dhcp-rela;
+
+  import srl_nokia-tools-system {
+    prefix srl-tool-sys;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for dhcp relay operational commands
+
+     Copyright 2023-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+
+  grouping tools-system-dhcp-relay-top {
+    container dhcp-relay {
+      presence "Performs system-wide DHCP relay functions";
+      leaf update-dns-entries {
+        description
+          "Update all dhcp-relay server domain name resolutions
+
+           A server host entry that cannot be resolved will be unavailable until it can be successfully resolved.";
+        type empty;
+      }
+    }
+  }
+
+  augment "/srl-tool-sys:system" {
+    uses tools-system-dhcp-relay-top;
+  }
+}

@@ -1,0 +1,84 @@
+module srl_nokia-tools-msdp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:msdp:tools-msdp";
+  prefix srl-tool-msdp;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for MSDP operational commands
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.03.1";
+  }
+
+  grouping msdp-tools-top {
+    container msdp {
+      if-feature "srl-feat:msdp";
+      presence "Send operational commands to MSDP manager";
+      description
+        "Operational tools commands for MSDP.";
+      container statistics {
+        description
+          "Enter the statistics context
+
+           Clear MSDP instance statistics.";
+        leaf clear {
+          type empty;
+          description
+            "Reset all MSDP counters for this network-instance to zero.";
+        }
+      }
+      list peer {
+        key "ip-address";
+        description
+          "MSDP peer tools.";
+        leaf ip-address {
+          type srl-comm:ipv4-address-unicast;
+          description
+            "IP address of the remote MSDP peer.";
+        }
+        container statistics {
+          description
+            "Enter the statistics context
+
+             Clear MSDP peer statistics.";
+          leaf clear {
+            type empty;
+            description
+              "Reset all MSDP counters for this peer to zero.";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:protocols" {
+    uses msdp-tools-top;
+  }
+}

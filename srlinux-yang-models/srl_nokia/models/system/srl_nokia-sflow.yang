@@ -1,0 +1,316 @@
+module srl_nokia-sflow {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:linux:sflow";
+  prefix srl-sflo;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-qos {
+    prefix srl-qos;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file gives a description of sflow-agent
+     configuration.
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2024-10-31 {
+    description
+      "SR Linux 24.10.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2023-07-31 {
+    description
+      "SR Linux 23.7.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  grouping sflow-agent-top {
+    container sflow {
+      if-feature "srl-feat:sflow and not srl-feat:platform-imgmt";
+      presence "Configure sFlow Agent";
+      description
+        "Context to configure sFlow Agent parameters and report sFlow state";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "Administratively enable or disable sFlow for the system";
+      }
+      leaf source-address {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "Specifies the IP address to be used as the source address in sFlow packets";
+      }
+      leaf transport {
+        if-feature "srl-feat:sflow-gnpsi-interface";
+        type enumeration {
+          enum collector {
+            description
+              "sflow flow data is transported via configured collectors";
+          }
+          enum gnpsi {
+            description
+              "sflow flow data is transported via established gNPSI connection";
+          }
+        }
+        default "collector";
+        description
+          "Specifies sFlow samples should be exported via the gNPSI gRPC server or collector";
+      }
+      list collector {
+        key "collector-id";
+        max-elements 8;
+        description
+          "List of sFlow collectors to which sFlow sample data is sent";
+        leaf collector-id {
+          type uint16 {
+            range "1..8";
+          }
+          description
+            "Specify the collector ID";
+        }
+        leaf collector-address {
+          srl-exts:show-importance "high";
+          type srl-comm:ip-address;
+          description
+            "The IP address for an sFlow collector";
+        }
+        leaf network-instance {
+          type leafref {
+            path "/srl-netinst:network-instance/srl-netinst:name";
+          }
+          must 'not(/srl-netinst:network-instance[srl-netinst:name=current()]/srl-netinst:type = "srl-netinst:mac-vrf")' {
+            error-message "sFlow collector cannot be in a network-instance of type 'mac-vrf'";
+          }
+          mandatory true;
+          description
+            "Reference to a configured network-instance";
+        }
+        leaf source-address {
+          srl-exts:show-importance "high";
+          type srl-comm:ip-address;
+          must 'not(boolean(../../source-address))' {
+            error-message "Should not have source-address configured at sflow context";
+          }
+          description
+            "Specifies the IP address to be used as the source address in sFlow packets";
+        }
+        must 'boolean(./source-address) or boolean(../source-address)' {
+          error-message "Should have source-address configured";
+        }
+        leaf port {
+          srl-exts:show-importance "high";
+          type uint16;
+          default "6343";
+          description
+            "Specifies the destination UDP port number to be used in sFlow packets";
+        }
+        leaf next-hop {
+          config false;
+          srl-exts:show-importance "high";
+          type srl-comm:ip-address;
+          description
+            "Specifies the active IP next hop used to reach the associated collector";
+        }
+      }
+      leaf sample-rate {
+        srl-exts:show-importance "high";
+        type uint32 {
+          range "0..2000000";
+        }
+        default "10000";
+        description
+          "Specify sFlow sample rate
+
+           This value is the rate at which traffic will be sampled at a rate of 1:N received packets.";
+      }
+      leaf egress-sample-rate {
+        srl-exts:show-importance "high";
+        if-feature "srl-feat:sflow-gue-packets or srl-feat:sflow-system-egress-sample-rate";
+        type uint32 {
+          range "0..2000000";
+        }
+        default "0";
+        must '(not(../transport) or . = 0 or ../transport = "gnpsi")' {
+          srl-exts:if-feature "srl-feat:sflow-gue-packets";
+          error-message "Egress sampling is supported only when transport is GNPSI";
+        }
+        description
+          "Specify sFlow egress sample rate
+
+           This value is the rate at which traffic will be sampled at a rate of 1:N sent packets.";
+      }
+      leaf sample-size {
+        srl-exts:show-importance "high";
+        type uint16 {
+          range "256 | 512";
+        }
+        default "256";
+        description
+          "Specify sFlow sample size
+
+           This value specifies the number of bytes the sFlow agent samples from each frame.";
+      }
+      leaf dscp {
+        srl-exts:show-importance "high";
+        if-feature "srl-feat:sflow-collector-dscp";
+        type srl-comm:dscp;
+        default "0";
+        description
+          "Specify sFlow DSCP value
+
+            This value specifies the DSCP value used in IP header of samples sent to the associated collectors.";
+      }
+      leaf forwarding-class {
+        srl-exts:show-importance "high";
+        if-feature "srl-feat:qos and srl-feat:sflow-collector-fc";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:forwarding-classes/srl-qos:forwarding-class/srl-qos:name";
+        }
+        description
+          "The forwarding class
+           When value not specified, the sgt-qos value will be used";
+      }
+      leaf ipv6-udp-checksum {
+        if-feature "srl-feat:sflow-ipv6-udp-cksum-knob";
+        type enumeration {
+          enum zero {
+            value 0;
+            description
+              "For IPv6 sFlow sample messages, the UDP checksum is set to 0x0";
+          }
+          enum all-ones {
+            value 1;
+            description
+              "For IPv6 sFlow sample messages, the UDP checksum is set to 0xFFFF";
+          }
+        }
+        default "all-ones";
+        description
+          "Value to be placed in the UDP transport checksum for IPv6 sFlow sample messages.
+           zero    : The UDP checksum is set to 0x0
+           all-ones: The UDP checksum is set to 0xFFFF";
+      }
+      leaf gnpsi-max-datagram-size {
+        srl-exts:show-importance "high";
+        if-feature "srl-feat:sflow-gnpsi-interface";
+        type uint16 {
+          range "576..9446";
+        }
+        default "1468";
+        description
+          "Specify maximum sFlow datagram size when using gNPSI as the transport
+
+           This value specifies the maximum size of the datagram used to send sFlow samples to collectors via gNPSI.";
+      }
+      container statistics {
+        config false;
+        leaf total-offered-packets {
+          type srl-comm:zero-based-counter64;
+          description
+            "Total number of packets subject to sFlow sampling";
+        }
+        leaf total-samples-taken {
+          type srl-comm:zero-based-counter64;
+          description
+            "Total number of sFlow samples taken";
+        }
+        leaf total-ingress-samples-taken {
+          if-feature "srl-feat:sflow-system-egress-sample-rate";
+          type srl-comm:zero-based-counter64;
+          description
+            "Total number of sFlow Ingress samples taken";
+        }
+        leaf total-egress-samples-taken {
+          if-feature "srl-feat:sflow-system-egress-sample-rate";
+          type srl-comm:zero-based-counter64;
+          description
+            "Total number of sFlow Egress samples taken";
+        }
+        leaf total-sent-packets {
+          type srl-comm:zero-based-counter64;
+          description
+            "Total number of sFlow packets sent to collectors";
+        }
+        description
+          "Enter the statistics context";
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    uses sflow-agent-top;
+  }
+}

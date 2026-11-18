@@ -1,0 +1,346 @@
+module srl_nokia-tools-pim {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:pim:tools-pim";
+  prefix srl-tool-pim;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for PIM operational commands
+
+     Copyright 2022-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2023-07-31 {
+    description
+      "SR Linux 23.7.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2022-06-30 {
+    description
+      "SR Linux 22.6.1";
+  }
+
+  grouping pim-tools-top {
+    container pim {
+      if-feature "srl-feat:pim";
+      presence "Send operational commands to PIM manager";
+      container statistics {
+        container ipv4 {
+          description
+            "Enter the ipv4 context
+
+             IPv4 multicast PDU statistics";
+          leaf clear {
+            type empty;
+            description
+              "Clear the PIM statistics";
+          }
+        }
+        container ipv6 {
+          description
+            "Enter the ipv6 context
+
+             IPv6 multicast PDU statistics";
+          leaf clear {
+            type empty;
+            description
+              "Clear the PIM statistics";
+          }
+        }
+        list group {
+          key "group";
+          description
+            "Multicast group";
+          leaf group {
+            type srl-comm:ip-address;
+            description
+              "Multicast group address";
+          }
+          leaf clear {
+            type empty;
+            description
+              "Clear all PIM statistics for this group";
+          }
+          list source {
+            key "source";
+            description
+              "Source addresses.";
+            leaf source {
+              type srl-comm:ip-address;
+              description
+                "Source address";
+            }
+            leaf clear {
+              type empty;
+              description
+                "Clear all PIM statistics for this group and source";
+            }
+          }
+        }
+        list interface {
+          description
+            "List of PIM interfaces";
+          key "interface-name";
+          leaf interface-name {
+            type srl-comm:subinterface-multicast;
+            description
+              "Reference to a specific subinterface of the form
+               <interface-name>.<subinterface-index>, mpls-if-<index> or
+               mpls-virtual-if-<index>";
+          }
+          container ipv4 {
+            description
+              "Enter the ipv4 context
+
+               IPv4 multicast PDU statistics";
+            leaf clear {
+              type empty;
+              description
+                "Clear the PIM statistics";
+            }
+          }
+          container ipv6 {
+            description
+              "Enter the ipv6 context
+
+               IPv6 multicast PDU statistics";
+            leaf clear {
+              type empty;
+              description
+                "Clear the PIM statistics";
+            }
+          }
+        }
+        description
+          "Enter the statistics context";
+      }
+      container database {
+        container ipv4 {
+          description
+            "Enter the ipv4 context
+
+             IPv4 multicast database tools";
+          leaf clear {
+            type empty;
+            description
+              "Clear the PIM instance database";
+          }
+        }
+        container ipv6 {
+          description
+            "Enter the ipv6 context
+
+             IPv6 multicast database tools";
+          leaf clear {
+            type empty;
+            description
+              "Clear the PIM instance database";
+          }
+        }
+        list group {
+          key "group";
+          description
+            "Multicast group";
+          leaf group {
+            type srl-comm:ip-address;
+            description
+              "Multicast group address";
+          }
+          leaf clear {
+            type empty;
+            description
+              "Clear all PIM instance database entries for this group";
+          }
+          list interface {
+            description
+              "List of PIM interfaces";
+            key "interface-name";
+            leaf interface-name {
+              type srl-comm:subinterface-multicast;
+              description
+                "Reference to a specific subinterface of the form
+                 <interface-name>.<subinterface-index>, mpls-if-<index> or
+                 mpls-virtual-if-<index>";
+            }
+            leaf clear {
+              type empty;
+              description
+                "Clear all PIM database entries for this multicast group on the interface";
+            }
+          }
+          list source {
+            key "source";
+            description
+              "Source addresses";
+            leaf source {
+              type srl-comm:ip-address;
+              description
+                "Source address";
+            }
+            leaf clear {
+              type empty;
+              description
+                "Clear all PIM database entries for this group and source";
+            }
+            list interface {
+              description
+                "List of PIM interfaces";
+              key "interface-name";
+              leaf interface-name {
+                type srl-comm:subinterface-multicast;
+                description
+                  "Reference to a specific subinterface of the form
+                   <interface-name>.<subinterface-index>, mpls-if-<index> or
+                   mpls-virtual-if-<index>";
+              }
+              leaf clear {
+                type empty;
+                description
+                  "Clear all PIM database entries for this group and source on this interface";
+              }
+            }
+          }
+        }
+        list interface {
+          description
+            "List of PIM interfaces";
+          key "interface-name";
+          leaf interface-name {
+            type srl-comm:subinterface-multicast;
+            description
+              "Reference to a specific subinterface of the form
+               <interface-name>.<subinterface-index>, mpls-if-<index> or
+               mpls-virtual-if-<index>";
+          }
+          container ipv4 {
+            description
+              "Enter the ipv4 context
+
+               IPv4 specific database";
+            leaf clear {
+              type empty;
+              description
+                "Clear the PIM database";
+            }
+          }
+          container ipv6 {
+            description
+              "Enter the ipv6 context
+
+               IPv6 specific statistics";
+            leaf clear {
+              type empty;
+              description
+                "Clear the PIM database";
+            }
+          }
+        }
+        description
+          "Enter the database context";
+      }
+      container neighbor {
+        description
+          "Enter the neighbor context
+
+           Clear PIM neighbors by disabling pim adjacency messages";
+        container ipv4 {
+          description
+            "Enter the ipv4 context
+
+             Clear all IPv4 PIM adjacency on the system";
+          leaf clear {
+            type empty;
+            description
+              "Clear the PIM adjacency";
+          }
+        }
+        container ipv6 {
+          description
+            "Enter the ipv6 context
+
+             Clear all IPv6 PIM adjacency on the systems";
+          leaf clear {
+            type empty;
+            description
+              "Clear the PIM adjacency";
+          }
+        }
+        list interface {
+          description
+            "List of PIM interfaces";
+          key "interface-name";
+          leaf interface-name {
+            type srl-comm:subinterface-multicast;
+            description
+              "Reference to a specific subinterface of the form
+               <interface-name>.<subinterface-index>, mpls-if-<index> or
+               mpls-virtual-if-<index>";
+          }
+          container ipv4 {
+            description
+              "Enter the ipv4 context
+
+               Clear IPv4 specific adjacency on this interface";
+            leaf clear {
+              type empty;
+              description
+                "Clear the PIM adjacency";
+            }
+          }
+          container ipv6 {
+            description
+              "Enter the ipv6 context
+
+               Clear IPv6 specific adjacency on this interface";
+            leaf clear {
+              type empty;
+              description
+                "Clear the PIM adjacency";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:protocols" {
+    uses pim-tools-top;
+  }
+}

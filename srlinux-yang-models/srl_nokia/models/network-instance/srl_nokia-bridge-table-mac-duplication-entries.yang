@@ -1,0 +1,131 @@
+module srl_nokia-bridge-table-mac-duplication-entries {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac:bridge-table-mac-duplication-entries";
+  prefix srl-brid-tbl-mac-dupl-entr;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-interfaces-bridge-table-mac-duplication-entries {
+    prefix srl-ifs-brid-tbl-mac-dupl-entr;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file gives a description of bridge table configuration.
+
+     Copyright 2020-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+
+  grouping bridge-table-mac-duplication-entries-top {
+    container duplicate-entries {
+      config false;
+      list mac {
+        config false;
+        key "address";
+        description
+          "macs duplicate on the bridging instance";
+        leaf address {
+          type srl-comm:mac-address;
+        }
+        leaf destination-type {
+          type srl-comm:destination-type;
+          description
+            "the type of the destination the duplicate mac is installed against in the fdb.";
+        }
+        leaf destination-index {
+          type uint64;
+          srl-exts:show-importance "high";
+          description
+            "A system-wide unique identifier of a subinterface object (system allocated).";
+        }
+        leaf dup-detect-time {
+          type srl-comm:date-and-time-delta;
+          srl-exts:show-importance "high";
+          description
+            "The date and time when the mac was declared duplicate";
+        }
+        leaf hold-down-time-remaining {
+          type union {
+            type enumeration {
+              enum indefinite {
+                value 1;
+              }
+            }
+            type uint64;
+          }
+          units "seconds";
+          srl-exts:show-importance "high";
+          description
+            "remaining hold down time for duplicate mac";
+        }
+        leaf destination {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "the name of the destination the duplicate mac is installed against in the fdb.";
+        }
+        uses srl-ifs-brid-tbl-mac-dupl-entr:delete-mac-action;
+      }
+      description
+        "Enter the duplicate-entries context";
+    }
+  }
+
+  grouping delete-macs-action {
+    action delete-macs {
+      srl-exts:telemetry-capability "unsupported";
+      if-feature "srl-feat:tools-as-modeled-actions-different-io-l2-mac-mgr";
+      description
+        "Execute the delete-macs action
+
+         Delete duplicate mac entries by type.";
+      input {
+        leaf type {
+          type enumeration {
+            enum all;
+            enum blackhole-only;
+          }
+          mandatory true;
+          description
+            "Type of duplicate mac entries to delete.";
+        }
+      }
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:bridge-table/srl-netinst:mac-duplication" {
+    uses delete-macs-action;
+    uses bridge-table-mac-duplication-entries-top;
+  }
+}

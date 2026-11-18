@@ -1,0 +1,42 @@
+module srl_nokia-diagnostics {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:diagnostics:diagnostics";
+  prefix srl-diag;
+
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for application diagnostic commands.
+
+     Per-application diagnostic command modules are generated at build
+     time and augment the diagnostics container defined here.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  container diagnostics {
+    if-feature "srl-feat:tools-diagnostics";
+    srl-exts:telemetry-capability "unsupported";
+    config false;
+    description
+      "Enter the diagnostics context
+
+       Enclosing container for application diagnostic commands (yang modeled
+       actions generated from application shell commands).";
+  }
+}

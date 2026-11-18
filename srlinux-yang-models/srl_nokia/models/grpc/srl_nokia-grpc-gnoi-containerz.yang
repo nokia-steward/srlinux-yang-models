@@ -1,0 +1,734 @@
+module srl_nokia-grpc-gnoi-containerz {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:grpc:grpc-gnoi-containerz";
+  prefix srl-grpc-gnoi-cont;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for gNOI Containerz operational state
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+
+  grouping containerz-state {
+    container containerz {
+      config false;
+      srl-exts:first-released "26.3.1";
+      description
+        "Enter the containerz context
+
+         Operational state for gNOI Containerz
+
+         Displays the current containers, images, volumes, and plugins managed by the container runtime.";
+      list container {
+        key "id";
+        description
+          "List of containers on the system
+
+           The key is the unique container ID from the container runtime.
+           When a container runs on both active and standby CPMs (location all),
+           each instance has a distinct ID.";
+        leaf id {
+          type string;
+          srl-exts:show-importance "low";
+          description
+            "The unique identifier of the container as reported by the container runtime";
+        }
+        leaf name {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "The name of the container instance";
+        }
+        leaf image-name {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "The image name used by this container";
+        }
+        leaf status {
+          type enumeration {
+            enum UNSPECIFIED;
+            enum STOPPED;
+            enum RUNNING;
+            enum PRESENT;
+            enum NOT_FOUND;
+          }
+          srl-exts:show-importance "high";
+          description
+            "The current status of the container";
+        }
+        list labels {
+          key "key";
+          description
+            "Labels associated with this container
+
+             Labels may contain dynamic information added by the containerz
+             implementation, such as location placement metadata.
+             Notable labels include:
+               net.openconfig.containerz.location.intended: the requested placement (L_PRIMARY, L_BACKUP, L_ALL)
+               net.openconfig.containerz.location.actual: where this instance is running (primary or backup)
+               net.openconfig.containerz.location.reason: reason if placement failed on intended CPM";
+          leaf key {
+            type string;
+            description
+              "The label key";
+          }
+          leaf value {
+            type string;
+            srl-exts:show-importance "high";
+            description
+              "The label value";
+          }
+        }
+        container hash {
+          description
+            "Enter the hash context
+
+             The computed hash of the image as returned by the container runtime.";
+          leaf method {
+            type string;
+            srl-exts:show-importance "high";
+            description
+              "The method used to compute the hash";
+          }
+          leaf hash {
+            type string;
+            srl-exts:show-importance "high";
+            description
+              "The computed hash value of the image";
+          }
+        }
+      }
+      list image {
+        key "name";
+        description
+          "List of container images available on the system
+
+           Each entry represents a unique image name and tag combination.
+           The key is in the format 'image-name:tag'.";
+        leaf name {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "The image name and tag in 'image-name:tag' format";
+        }
+        leaf id {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "The unique identifier (digest) of the image";
+        }
+      }
+      list volume {
+        key "name";
+        description
+          "List of volumes on the system";
+        leaf name {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "The name of the volume";
+        }
+        leaf created {
+          type srl-comm:date-and-time-delta;
+          srl-exts:show-importance "low";
+          description
+            "The timestamp when the volume was created";
+        }
+        leaf driver {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "The volume driver";
+        }
+        list labels {
+          key "key";
+          srl-exts:first-released "26.10.1";
+          description
+            "Labels associated with this volume";
+          leaf key {
+            type string;
+            description
+              "The label key";
+          }
+          leaf value {
+            type string;
+            srl-exts:show-importance "high";
+            description
+              "The label value";
+          }
+        }
+        list options {
+          key "key";
+          srl-exts:first-released "26.10.1";
+          description
+            "Driver options for this volume
+
+             The option keys and values are volume-driver specific.";
+          leaf key {
+            type string;
+            description
+              "The option key";
+          }
+          leaf value {
+            type string;
+            srl-exts:show-importance "high";
+            description
+              "The option value";
+          }
+        }
+      }
+      list plugin {
+        key "id";
+        srl-exts:first-released "26.10.1";
+        description
+          "List of plugins on the system
+
+           The key is the unique plugin ID from the container runtime.";
+        leaf id {
+          type string;
+          srl-exts:show-importance "low";
+          description
+            "The unique identifier of the plugin as reported by the container runtime";
+        }
+        leaf instance-name {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "The instance name of the running plugin";
+        }
+        container hash {
+          description
+            "Enter the hash context
+
+             The computed hash of the plugin as returned by the container runtime.";
+          leaf method {
+            type string;
+            srl-exts:show-importance "high";
+            description
+              "The method used to compute the hash";
+          }
+          leaf hash {
+            type string;
+            srl-exts:show-importance "high";
+            description
+              "The computed hash value of the plugin";
+          }
+        }
+        leaf config {
+          type string;
+          srl-exts:show-importance "low";
+          description
+            "The JSON configuration the plugin was started with";
+        }
+      }
+      action deploy-image {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the deploy-image action
+
+           Deploy a container image from a local file path
+
+           The image file must be a valid container image archive (e.g. tar).
+           Upon successful deployment, the image is loaded into the container runtime registry.";
+        input {
+          leaf local-path {
+            mandatory true;
+            type string;
+            description
+              "The local file path of the container image archive to deploy";
+          }
+          leaf name {
+            type string;
+            description
+              "The name to assign to the container image
+
+               If not specified, the name is derived from the image archive.";
+          }
+          leaf tag {
+            type string;
+            description
+              "The tag (version) to assign to the container image
+
+               If not specified, the tag is derived from the image archive.";
+          }
+        }
+      }
+      action deploy-plugin {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the deploy-plugin action
+
+           Deploy a plugin from a local file path
+
+           The plugin file must be a valid plugin archive (e.g. tar).
+           Upon successful deployment, the plugin is saved until StartPlugin is called.";
+        input {
+          leaf local-path {
+            mandatory true;
+            type string;
+            description
+              "The local file path of the plugin archive to deploy";
+          }
+          leaf name {
+            type string;
+            description
+              "The name to assign to the plugin";
+          }
+          leaf tag {
+            type string;
+            description
+              "The tag (version) to assign to the plugin";
+          }
+        }
+      }
+      action start-container {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the start-container action
+
+           Start a container from a specified image
+
+           If the image does not exist on the target, an error is returned.
+           An instance name can optionally be provided, otherwise the target assigns one.";
+        input {
+          leaf image-name {
+            mandatory true;
+            type string;
+            description
+              "The name of the container image to start";
+          }
+          leaf tag {
+            type string;
+            description
+              "The tag (version) of the container image to start";
+          }
+          leaf instance-name {
+            type string;
+            description
+              "The name to give the running container instance
+
+               If not specified, the target assigns a name.";
+          }
+          leaf cmd {
+            type string;
+            description
+              "The command to run inside the container";
+          }
+          leaf network {
+            type string;
+            description
+              "The network to attach this container to
+
+               This could be 'host', 'bridged', or any other network available in the runtime.";
+          }
+          leaf-list ports {
+            type string {
+              pattern '[0-9]{1,5}:[0-9]{1,5}(/(tcp|udp))?';
+            }
+            description
+              "Host-to-container port mappings
+
+               Each entry is host:container, optionally with /tcp or /udp,
+               for example 18080:80 or 18080:80/tcp. Both ports must be in
+               the range 1 to 65535. Only TCP can be published, so /udp is
+               rejected rather than silently mapped to TCP.";
+          }
+          leaf-list environment {
+            type string;
+            description
+              "Environment variables to set in the container
+
+               Each entry should be in KEY=VALUE format.";
+          }
+          leaf-list volume {
+            type string {
+              pattern '[a-zA-Z0-9][a-zA-Z0-9_.-]*:/[^:]*(:[a-zA-Z,]+)?';
+            }
+            description
+              "Volumes to attach to the container
+
+               Each entry is name:mount-point with an optional comma-delimited
+               option list, for example myvol:/data or myvol:/data:ro. Mounts
+               are read-write unless ro is given. Only ro and rw are supported;
+               other Docker options are rejected rather than silently ignored.
+               The name must be a volume created via create-volume, not a host
+               path.";
+          }
+          leaf-list cap-add {
+            type string;
+            description
+              "Linux capabilities to add to the container
+
+               Valid capabilities can be found in capabilities(7).";
+          }
+          leaf-list cap-remove {
+            type string;
+            description
+              "Linux capabilities to remove from the container";
+          }
+          leaf restart-policy {
+            type enumeration {
+              enum none {
+                description
+                  "Never restart the container";
+              }
+              enum always {
+                description
+                  "Always restart the container unless explicitly stopped, including across runtime restarts";
+              }
+              enum unless-stopped {
+                description
+                  "Same as always but not across container runtime restarts";
+              }
+              enum on-failure {
+                description
+                  "Restart on failure for a maximum number of attempts";
+              }
+            }
+            description
+              "The restart policy to use for this container";
+          }
+          leaf restart-attempts {
+            type uint32;
+            description
+              "Maximum restart attempts when restart-policy is on-failure";
+          }
+          leaf run-as-user {
+            type string;
+            description
+              "The user to run the container as";
+          }
+          leaf run-as-group {
+            type string;
+            description
+              "The group to run the container as";
+          }
+          leaf-list label {
+            type string;
+            description
+              "Labels to apply to the container
+
+               Each entry should be in KEY=VALUE format.";
+          }
+          leaf max-cpu {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "Maximum amount of CPU the container can use
+
+               For example, 0.5 means this container can use a maximum of half a CPU.";
+          }
+          leaf soft-mem-bytes {
+            type int64;
+            description
+              "Soft memory limit in bytes
+
+               If the system is memory constrained, the container may be OOM killed
+               if it exceeds this limit.";
+          }
+          leaf hard-mem-bytes {
+            type int64;
+            description
+              "Hard memory limit in bytes
+
+               If the container exceeds this limit, the container runtime can
+               terminate (OOM kill) the container.";
+          }
+          leaf location {
+            if-feature "srl-feat:containerz-location";
+            type enumeration {
+              enum unknown;
+              enum primary {
+                description
+                  "Run on the primary supervisor card";
+              }
+              enum backup {
+                description
+                  "Run on the backup supervisor card";
+              }
+              enum all {
+                description
+                  "Run on all supervisor cards";
+              }
+            }
+            description
+              "Defines where the container should run";
+          }
+        }
+        output {
+          leaf instance-name {
+            srl-exts:first-released "27.3.1";
+            type string;
+            description
+              "The name of the running container instance";
+          }
+        }
+      }
+      action stop-container {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the stop-container action
+
+           Stop a running container
+
+           If the container does not exist or is not running, an error is returned.";
+        input {
+          leaf instance-name {
+            mandatory true;
+            type string;
+            description
+              "The name of the container instance to stop";
+          }
+          leaf force {
+            type boolean;
+            default "false";
+            description
+              "If true, forcibly kill the container";
+          }
+          leaf restart {
+            type boolean;
+            default "false";
+            description
+              "If true, restart the container immediately after stopping it";
+          }
+        }
+      }
+      action remove-container {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the remove-container action
+
+           Remove a container from the system
+
+           The container must be stopped unless force is specified.";
+        input {
+          leaf instance-name {
+            mandatory true;
+            type string;
+            description
+              "The name of the container instance to remove";
+          }
+          leaf force {
+            type boolean;
+            default "false";
+            description
+              "If true, forcibly remove the container even if it is running";
+          }
+        }
+      }
+      action remove-image {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the remove-image action
+
+           Remove a container image from the system
+
+           If the image is associated with a running container, an error is returned.";
+        input {
+          leaf name {
+            mandatory true;
+            type string;
+            description
+              "The name of the container image to remove";
+          }
+          leaf tag {
+            type string;
+            description
+              "The tag of the container image to remove";
+          }
+          leaf force {
+            type boolean;
+            default "false";
+            description
+              "If true, forcibly remove the image";
+          }
+        }
+      }
+      action create-volume {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the create-volume action
+
+           Create a persistent volume for container use
+
+           A volume is backed by persistent storage and is expected to exist across device reboots.";
+        input {
+          leaf name {
+            type string;
+            description
+              "The name of the volume to create";
+          }
+          leaf driver {
+            type enumeration {
+              enum local {
+                description
+                  "Standard mount(8) built-in volume driver";
+              }
+              enum custom {
+                description
+                  "Custom volume driver loaded via Plugin RPCs";
+              }
+            }
+            description
+              "The volume driver to use
+
+               If not specified, defaults to the standard Linux mount driver.";
+          }
+          leaf-list label {
+            type string;
+            description
+              "Labels to apply to the volume
+
+               Each entry should be in KEY=VALUE format. Labels are metadata for the volume.";
+          }
+          leaf mountpoint {
+            type string;
+            description
+              "The mount point for the local driver";
+          }
+          leaf-list mount-option {
+            type string;
+            description
+              "Mount options for the local driver
+
+               Options as specified by mount(8).";
+          }
+        }
+        output {
+          leaf name {
+            srl-exts:first-released "27.3.1";
+            type string;
+            description
+              "The name of the created volume";
+          }
+        }
+      }
+      action remove-volume {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the remove-volume action
+
+           Remove a volume from the system";
+        input {
+          leaf name {
+            mandatory true;
+            type string;
+            description
+              "The name of the volume to remove";
+          }
+          leaf force {
+            type boolean;
+            default "false";
+            description
+              "If true, forcibly remove the volume";
+          }
+        }
+      }
+      action start-plugin {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the start-plugin action
+
+           Start a previously deployed plugin";
+        input {
+          leaf name {
+            type string;
+            description
+              "The name of the plugin as specified during the deploy request";
+          }
+          leaf instance-name {
+            mandatory true;
+            type string {
+              length "1..4096";
+            }
+            description
+              "The name to give the running plugin instance";
+          }
+          leaf config {
+            type string;
+            description
+              "The JSON configuration for the plugin";
+          }
+        }
+      }
+      action stop-plugin {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the stop-plugin action
+
+           Stop a running plugin";
+        input {
+          leaf instance-name {
+            mandatory true;
+            type string;
+            description
+              "The name of the plugin instance to stop";
+          }
+        }
+      }
+      action remove-plugin {
+        srl-exts:telemetry-capability "unsupported";
+        srl-exts:first-released "26.3.1";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the remove-plugin action
+
+           Remove a plugin from the system";
+        input {
+          leaf instance-name {
+            mandatory true;
+            type string;
+            description
+              "The name of the plugin instance to remove";
+          }
+        }
+      }
+    }
+  }
+}

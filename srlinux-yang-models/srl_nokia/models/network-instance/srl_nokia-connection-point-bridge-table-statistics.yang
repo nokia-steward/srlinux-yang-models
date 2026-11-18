@@ -1,0 +1,36 @@
+module srl_nokia-connection-point-bridge-table-statistics {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac:connection-point-bridge-table-statistics";
+  prefix srl-conn-poin-brid-tbl-stat;
+
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-interfaces-bridge-table-statistics {
+    prefix srl-ifs-brid-tbl-stat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for bridge-table-statistics on this connection-points.
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:connection-point/srl-netinst:bridge-table" {
+    uses srl-ifs-brid-tbl-stat:bridge-table-statistics-top;
+  }
+}

@@ -1,0 +1,137 @@
+module srl_nokia-system-bridge-table-evpn-multicast-tep {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:evpn-multicast-tep:system-bridge-table-evpn-multicast-tep";
+  prefix srl-sys-brid-tbl-evpn-mult-tep;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-system-bridge-table {
+    prefix srl-sys-brid-tbl;
+  }
+  import srl_nokia-system-bridge-table-evpn {
+    prefix srl-sys-brid-tbl-evpn;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines system bridge-table BGP-EVPN multicast Termination
+     Endpoint operational state data
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping bridge-table-evpn-multicast-tep-multicast-tep-statistics-top {
+    container statistics {
+      config false;
+      leaf total-entries {
+        type srl-comm:zero-based-counter64;
+        srl-exts:show-importance "high";
+        description
+          "The total number of BGP-EVPN multicast Termination EndPoints (TEPs)";
+      }
+      leaf active-entries {
+        type srl-comm:zero-based-counter64;
+        srl-exts:show-importance "high";
+        description
+          "The total number of active BGP-EVPN multicast Termination Endpoints (TEPs)";
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping bridge-table-evpn-multicast-tep-multicast-tep-top {
+    list tep {
+      config false;
+      key "tep";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote BGP-EVPN multicast Termination Endpoint (TEP)";
+      }
+      leaf index {
+        srl-exts:show-importance "high";
+        type uint64;
+        description
+          "The hardware index (system allocated) for the BGP-EVPN multicast Termination Endpoint (TEP)
+
+           If a non-zero hardware index is allocated, then there are available system resources and there is
+           at least one BGP-EVPN multicast destination (using this TEP) ready to be programmed. If the
+           hardware index is 0, there are not resources left and the TEP is not programmed, even if an Inclusive
+           Multicast Ethernet Tag route was correctly imported from a peer.";
+      }
+      leaf last-changed {
+        type srl-comm:date-and-time-delta;
+        srl-exts:show-importance "high";
+        description
+          "The date and time of the last update of this BGP-EVPN multicast Termination Endpoint";
+      }
+    }
+  }
+
+  grouping bridge-table-evpn-multicast-tep-mpls-top {
+    container mpls {
+      if-feature "srl-feat:evpn-mpls";
+      description
+        "Enter the mpls context
+
+         System bridge-table BGP-EVPN MPLS multicast Termination Endpoint information";
+      uses bridge-table-evpn-multicast-tep-multicast-tep-statistics-top;
+      uses bridge-table-evpn-multicast-tep-multicast-tep-top;
+    }
+  }
+
+  grouping bridge-table-evpn-multicast-tep-srv6-top {
+    container srv6 {
+      if-feature "srl-feat:srv6-dt2";
+      description
+        "Enter the srv6 context
+
+         System bridge-table BGP-EVPN SRv6 multicast Termination Endpoint information";
+      uses bridge-table-evpn-multicast-tep-multicast-tep-statistics-top;
+      uses bridge-table-evpn-multicast-tep-multicast-tep-top;
+    }
+  }
+
+  grouping bridge-table-evpn-multicast-tep-top {
+    container multicast-tep {
+      description
+        "Enter the multicast-tep context
+
+         System bridge-table BGP-EVPN multicast Termination Endpoint information";
+      leaf max-entries {
+        config false;
+        type srl-comm:zero-based-counter64;
+        srl-exts:show-importance "high";
+        description
+          "The maximum number of BGP-EVPN multicast Termination EndPoints (TEPs) allowed in the system";
+      }
+      uses bridge-table-evpn-multicast-tep-mpls-top;
+      uses bridge-table-evpn-multicast-tep-srv6-top;
+    }
+  }
+
+  augment "/srl-sys:system/srl-sys-brid-tbl:bridge-table/srl-sys-brid-tbl-evpn:evpn" {
+    uses bridge-table-evpn-multicast-tep-top;
+  }
+}

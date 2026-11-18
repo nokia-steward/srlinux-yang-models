@@ -1,0 +1,207 @@
+module srl_nokia-platform-attestation {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:platform-attestation";
+  prefix srl-plat-atte;
+
+  import srl_nokia-platform {
+    prefix srl-plat;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational actions for platform Trust TPM Attestation related functions
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  identity attested_event_log_type {
+    description
+      "Base identity allowing categorization of the reasons why an attested measurement has been taken on an Attester";
+  }
+
+  identity ima {
+    base attested_event_log_type;
+    description
+      "An event type recorded in IMA";
+  }
+
+  identity bios {
+    base attested_event_log_type;
+    description
+      "An event type associated with BIOS/UEFI";
+  }
+
+  grouping log-retrieval-options {
+    leaf summary {
+      type empty;
+      description
+        "retrieve a summary of the log";
+    }
+    container display {
+      config false;
+      leaf from {
+        type uint32;
+        description
+          "1-based log display starting index";
+        default "1";
+      }
+      leaf to {
+        type uint32;
+        description
+          "1-based log display terminal index. 0 indicates use maximum index in log";
+        default "0";
+      }
+      leaf pcr {
+        type int32;
+        description
+          "limit display to entries associated with a specific PCR. A value of -1 shows all PCRs";
+        default "-1";
+      }
+    }
+  }
+
+  grouping attestation-top {
+    container attestation {
+      if-feature "srl-feat:measured-boot";
+      config false;
+      description
+        "Enter the attestation context
+
+         Action for attestation to retrieve TCG BIOS Logs, IMA Logs";
+      list control {
+        config false;
+        key "slot";
+        description
+          "Operational commands related to log retrieval for control modules";
+        leaf slot {
+          type string {
+            pattern 'A|B';
+          }
+          description
+            "Slot identifier for the control module";
+        }
+        action pcr-quote {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+          description
+            "Execute the pcr-quote action
+
+             Action to retrieve TPM PCR Quote
+             This action includes every information element defined in the reference challenge-response interaction model for remote attestation. Corresponding values are based on TPM 2.0 structure definitions.";
+          input {
+            leaf nonce {
+              type binary;
+              description
+                "A random number intended to guarantee freshness and for use as part of a replay-detection mechanism
+                 Note that a nonce sent into a TPM will typically be 160 or 256 binary digits long (20 or 32 bytes).
+                 If fewer binary digits are sent, this nonce object will be padded with leading zeros within Quotes returned from the TPM
+                 Additionally if more bytes are sent, the nonce will be trimmed to the most significant binary digits.";
+            }
+            leaf pcr-selection {
+              type string;
+              description
+                "A tpm2-tools compliant pcr selection string";
+              reference
+                "https://github.com/tpm2-software/tpm2-tools/blob/master/man/common/pcr.md";
+            }
+          }
+          output {
+            leaf info {
+              type string;
+              description
+                "Info message returned by the pcr-quote operation";
+            }
+          }
+        }
+        action pcr-read {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+          description
+            "Execute the pcr-read action
+
+             Action to retrieve TPM PCR values
+             Without pcr-selection, the command outputs all PCRs and their hash banks.";
+          input {
+            leaf pcr-selection {
+              type string;
+              description
+                "A tpm2-tools compliant pcr selection string";
+              reference
+                "https://github.com/tpm2-software/tpm2-tools/blob/master/man/common/pcr.md";
+            }
+          }
+          output {
+            leaf info {
+              type string;
+              description
+                "Info message returned by the pcr-read operation";
+            }
+          }
+        }
+        container log-retrieval {
+          config false;
+          if-feature "srl-feat:measured-boot";
+          description
+            "Enter the log-retrieval context
+
+             Actions to retrieve BIOS and IMA Log";
+          action bios {
+            srl-exts:telemetry-capability "unsupported";
+            if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+            description
+              "Execute the bios action
+
+               TCG BIOS log retrieval command";
+            input {
+              uses log-retrieval-options;
+            }
+            output {
+              leaf info {
+                type string;
+                description
+                  "Info message returned by the bios log-retrieval operation";
+              }
+            }
+          }
+          action ima {
+            srl-exts:telemetry-capability "unsupported";
+            if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+            description
+              "Execute the ima action
+
+               IMA log retrieval command";
+            input {
+              uses log-retrieval-options;
+            }
+            output {
+              leaf info {
+                type string;
+                description
+                  "Info message returned by the ima log-retrieval operation";
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-plat:platform/srl-plat:trust" {
+    uses attestation-top;
+  }
+}

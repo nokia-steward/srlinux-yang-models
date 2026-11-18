@@ -1,0 +1,1673 @@
+module srl_nokia-mpls-rsvp-tunnel {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mpls:mpls-rsvp-tunnel";
+  prefix srl-mpls-rsvp-tunn;
+
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-traffic-engineering {
+    prefix srl-te;
+  }
+  import srl_nokia-mpls {
+    prefix srl-mpls;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-mpls-rsvp-tunnel-types {
+    prefix srl-mpls-rsvp-tunn-type;
+  }
+  import srl_nokia-mpls-rsvp-common {
+    prefix srl-mpls-rsvp-comm;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This YANG module defines the configuration and state components for the management of the Resource reSerVation Protocol (RSVP) tunnels.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+
+  grouping dump-fec-to-next-hop-info {
+    action dump-fec-to-next-hop-info {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-fec-to-next-hop-info action
+
+         Dump information about the FEC to next hop";
+      input {
+        choice filter {
+          description
+            "Optional filter to select which FEC entries to dump.";
+          case destination {
+            leaf destination {
+              type srl-comm:ipv4-address-unicast;
+              description
+                "The IP address of the endpoint of the FEC.";
+            }
+          }
+          case source {
+            leaf source {
+              type srl-comm:ipv4-address-unicast;
+              description
+                "The IP address of the sender of the FEC.";
+            }
+          }
+          case next-hop {
+            leaf next-hop {
+              type srl-comm:ipv4-address-unicast;
+              description
+                "The IP address of the next hop of the FEC.";
+            }
+          }
+          case lsp-id {
+            leaf lsp-id {
+              type uint16 {
+                range "1..65535";
+              }
+              description
+                "The LSP ID of the FEC.";
+            }
+          }
+          case tunnel-id {
+            leaf tunnel-id {
+              type uint16 {
+                range "1..65535";
+              }
+              description
+                "The tunnel ID of the FEC.";
+            }
+          }
+          case label {
+            container label {
+              presence "Filter FEC entries by MPLS label range";
+              description
+                "Enter the label context
+                 Filter FEC entries by MPLS label range.";
+              leaf start-label {
+                type srl-comm:mpls-label-with-implicit-and-explicit-null;
+                mandatory true;
+                description
+                  "The start label of the label range.";
+              }
+              leaf end-label {
+                type srl-comm:mpls-label-with-implicit-and-explicit-null;
+                mandatory true;
+                must '. >= ../start-label' {
+                  error-message "end-label must be greater than or equal to start-label.";
+                }
+                description
+                  "The end label of the label range.";
+              }
+            }
+          }
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping dump-ilm-info {
+    action dump-ilm-info {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-ilm-info action
+
+         Dump information about the ILM";
+      input {
+        choice filter {
+          description
+            "Optional filter to select which ILM entries to dump.
+             Only one filter type may be specified.";
+          case destination {
+            leaf destination {
+              type srl-comm:ipv4-address-unicast;
+              description
+                "The IP address of the destination of the LSP for the ILM.";
+            }
+          }
+          case source {
+            leaf source {
+              type srl-comm:ipv4-address-unicast;
+              description
+                "The IP address of the source of the LSP for the ILM.";
+            }
+          }
+          case next-hop {
+            leaf next-hop {
+              type srl-comm:ipv4-address-unicast;
+              description
+                "The IP address of the next hop of the LSP for the ILM.";
+            }
+          }
+          case lsp-id {
+            leaf lsp-id {
+              type uint16 {
+                range "1..65535";
+              }
+              description
+                "The LSP ID of the LSP for the ILM.";
+            }
+          }
+          case tunnel-id {
+            leaf tunnel-id {
+              type uint16 {
+                range "1..65535";
+              }
+              description
+                "The tunnel ID of the LSP for the ILM.";
+            }
+          }
+          case label {
+            container label {
+              presence "Filter ILM entries by MPLS label range";
+              description
+                "Enter the label context
+
+                 Filter ILM entries by MPLS label range.";
+              leaf start-label {
+                type srl-comm:mpls-label-with-implicit-and-explicit-null;
+                mandatory true;
+                description
+                  "The start label of the label range.";
+              }
+              leaf end-label {
+                type srl-comm:mpls-label-with-implicit-and-explicit-null;
+                mandatory true;
+                must '. >= ../start-label' {
+                  error-message "end-label must be greater than or equal to start-label.";
+                }
+                description
+                  "The end label of the label range.";
+              }
+            }
+          }
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping dump-constrained-path-tunnel-info {
+    action dump-tunnel-info {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-tunnel-info action
+
+         Dump information about the constrained path tunnels";
+      input {
+        leaf detail {
+          type empty;
+          description
+            "If set, the constrained path tunnel information will be dumped in detail.";
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping dump-constrained-path-te-tunnel-info {
+    action dump-te-tunnel-info {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-te-tunnel-info action
+
+         Dump TE information about the constrained path tunnel";
+      input {
+        leaf destination {
+          type srl-comm:ipv4-address-unicast;
+          description
+            "The IP address of the source of the TE tunnel.";
+        }
+        leaf source {
+          type srl-comm:ipv4-address-unicast;
+          description
+            "The IP address of the sender of the TE tunnel.";
+        }
+        leaf lsp-id {
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "The LSP ID of the TE tunnel.";
+        }
+        leaf tunnel-id {
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "The tunnel ID of the TE tunnel.";
+        }
+        leaf detail {
+          type empty;
+          description
+            "If set, the TE tunnel information will be dumped in detail.";
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping dump-bypass-tunnel-info {
+    action dump-bypass-tunnel-info {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-bypass-tunnel-info action
+
+         Dump information about the bypass tunnel";
+      input {
+        leaf bypass-tunnel-name {
+          type string {
+            length "1..160";
+          }
+          description
+            "Name of the bypass tunnel.";
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping dump-tunnel-history {
+    action dump-tunnel-history {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-tunnel-history action
+
+         Dump information about the LSP history";
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping clear-constrained-path-tunnel {
+    action clear {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the clear action
+
+         When invoked without input, bounce admin state for the constrained path tunnel(s)
+         and clear counters and certain timestamps (up-time, down-time, age, last-change etc.).
+
+         When invoked with the tunnel-history input leaf, clear the recorded history of
+         LSP events for constrained path tunnel(s).";
+      input {
+        leaf tunnel-history {
+          type empty;
+          description
+            "Clear constrained path tunnel history
+
+             Clears the recorded history of LSP events for constrained path tunnel(s).";
+        }
+      }
+    }
+  }
+
+  grouping constrained-path-tunnel-global-dump-commands {
+    description
+      "Dump commands applicable across all constrained path tunnels";
+    uses dump-fec-to-next-hop-info;
+    uses dump-ilm-info;
+    uses dump-constrained-path-tunnel-info;
+    uses dump-constrained-path-te-tunnel-info;
+  }
+
+  grouping constrained-path-tunnel-dump-commands {
+    description
+      "Dump commands applicable at the individual constrained path tunnel level";
+    uses dump-tunnel-history;
+    uses dump-constrained-path-tunnel-info;
+  }
+
+  grouping constrained-path-tunnel-global-clear-commands {
+    description
+      "Clear commands applicable across all constrained path tunnels";
+    uses clear-constrained-path-tunnel;
+  }
+
+  grouping constrained-path-tunnel-clear-commands {
+    description
+      "Clear commands applicable at the individual constrained path tunnel level";
+    uses clear-constrained-path-tunnel;
+  }
+
+  grouping constrained-path-tunnel-state {
+    description
+      "State of the constrained path tunnel";
+    leaf oper-state {
+      srl-exts:show-importance "high";
+      type srl-comm:oper-state;
+      config false;
+      description
+        "The operational state of the TE Tunnel";
+    }
+    leaf tunnel-id {
+      type uint16 {
+        range "1..65535";
+      }
+      config false;
+      description
+        "Tunnel ID for this tunnel.";
+    }
+    leaf create-time {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Time when this tunnel was created.";
+    }
+    leaf oper-state-changes {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "Number of operational state transitions for this tunnel.";
+    }
+    leaf last-oper-change-time {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Time when operational state of this tunnel last changed.";
+    }
+  }
+
+  grouping tunnel-counters {
+    description
+      "Counts of RSVP-TE tunnels";
+    container p2p-rsvp {
+      config false;
+      description
+        "Enter the p2p-rsvp context";
+      leaf ingress-session-count {
+        type srl-comm:gauge32;
+        description
+          "Number of P2P RSVP sessions for which this node is the ingress LER.";
+      }
+      leaf transit-session-count {
+        type srl-comm:gauge32;
+        description
+          "Number of P2P RSVP sessions for which this node is the transit LSR.";
+      }
+      leaf egress-session-count {
+        type srl-comm:gauge32;
+        description
+          "Number of P2P RSVP sessions for which this node is the egress LER.";
+      }
+      leaf tunnel-count {
+        type srl-comm:gauge32;
+        description
+          "Number of P2P RSVP constrained path tunnels on this node.";
+      }
+      leaf tunnel-up-count {
+        type srl-comm:gauge32;
+        description
+          "Number of operationally up P2P RSVP constrained path tunnels on this node.";
+      }
+    }
+  }
+
+  grouping named-explicit-path-state {
+    description
+      "State of the named explicit path";
+    leaf oper-state {
+      type srl-comm:oper-state;
+      config false;
+      description
+        "The operational state of the named explicit path.";
+    }
+  }
+
+  grouping path-hop-list {
+    description
+      "List of path hops";
+    list hop {
+      key "index";
+      max-elements 255;
+      description
+        "Enter the hop list instance";
+      leaf index {
+        type int32 {
+          range "1..1024";
+        }
+        description
+          "Index to identify a particular path hop";
+      }
+      leaf ip-address {
+        type srl-comm:ipv4-address-unicast;
+        description
+          "IP address of the hop";
+        mandatory true;
+      }
+      leaf type {
+        type enumeration {
+          enum strict {
+            value 1;
+          }
+          enum loose {
+            value 2;
+          }
+        }
+        description
+          "Type of the hop";
+        mandatory true;
+      }
+    }
+  }
+
+  grouping named-explicit-path-config {
+    description
+      "Configuration of the named explicit path";
+    leaf admin-state {
+      type srl-comm:admin-state;
+      default "disable";
+      description
+        "Administrative state of the explicit path";
+    }
+    uses path-hop-list;
+  }
+
+  grouping named-explicit-path-top {
+    description
+      "Named explicit paths for constrained path tunnels";
+    list named-explicit-path {
+      key "path-name";
+      description
+        "Named paths used to specify the explicit route for paths belonging to constrained path tunnels";
+      leaf path-name {
+        type srl-mpls-rsvp-tunn-type:path-name;
+        description
+          "Name of the explicit path";
+      }
+      uses named-explicit-path-config;
+      uses named-explicit-path-state;
+    }
+  }
+
+  grouping global-fast-reroute-config {
+    description
+      "Global fast reroute configuration for constrained path tunnels";
+    leaf dynamic-bypass {
+      type boolean;
+      default "true";
+      description
+        "Create dynamic bypass LSPs in FRR";
+    }
+    leaf max-bypass-associations {
+      type uint32 {
+        range "100..131072";
+      }
+      default "1000";
+      description
+        "Maximum number of LSPs associated with a bypass tunnel";
+    }
+    leaf max-bypass-plr-associations {
+      type uint32 {
+        range "1..16";
+      }
+      default "16";
+      description
+        "Maximum number of PLRs per RSVP-TE bypass LSP";
+    }
+    leaf bypass-reoptimization-timer {
+      type uint32 {
+        range "1..10800";
+      }
+      units "minutes";
+      description
+        "Reoptimization timer for RSVP-TE bypass tunnels.
+
+          When not configured, periodic reoptimization and tools reoptimize
+          delay are not in effect.";
+    }
+    leaf srlg-frr {
+      type enumeration {
+        enum loose {
+          value 1;
+          description
+            "Use loose SRLG constraint for FRR path computation";
+        }
+        enum strict {
+          value 2;
+          description
+            "Use strict SRLG constraint for FRR path computation";
+        }
+      }
+      description
+        "Use of SRLG constraint for FRR path computation";
+    }
+    leaf admin-group-frr {
+      type boolean;
+      default "false";
+      description
+        "Use admin group constraints for FRR path computation";
+    }
+  }
+
+  grouping global-fast-reroute-state {
+    description
+      "Global fast reroute state for constrained path tunnels";
+    leaf bypass-next-reoptimization-time {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Next reoptimization time for bypass tunnels.";
+    }
+  }
+
+  grouping tunnel-reoptimization-config {
+    description
+      "P2P tunnel reoptimization timer configuration for constrained path tunnels";
+    leaf p2p-reoptimization-timer {
+      type uint32 {
+        range "30..10800";
+      }
+      units "minutes";
+      description
+        "Reoptimization timer for point-to-point RSVP-TE tunnels.
+
+          When not configured, periodic reoptimization and tools reoptimize
+          delay are not in effect.";
+    }
+  }
+
+  grouping tunnel-reoptimization-state {
+    description
+      "P2P tunnel reoptimization timer state for constrained path tunnels";
+    leaf p2p-next-reoptimization-time {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Next reoptimization time for P2P RSVP-TE tunnels.";
+    }
+  }
+
+  grouping tunnel-reoptimization {
+    description
+      "P2P tunnel reoptimization timer configuration and state";
+    container tunnel-reoptimization {
+      description
+        "Enter the tunnel-reoptimization context";
+      uses tunnel-reoptimization-config;
+      uses tunnel-reoptimization-state;
+    }
+  }
+
+  grouping constrained-path-tunnel-global {
+    description
+      "Global configuration and state for constrained path tunnels";
+    container fast-reroute {
+      description
+        "Enter the fast-reroute context";
+      uses global-fast-reroute-config;
+      uses global-fast-reroute-state;
+      uses dump-bypass-tunnel-info;
+    }
+    uses tunnel-reoptimization;
+    leaf exponential-backoff-retry {
+      type boolean;
+      default "false";
+      description
+        "Use exponential back-off timer when retrying an LSP";
+    }
+    leaf hold-timer {
+      type union {
+        type uint32 {
+          range "1..1000";
+        }
+        type enumeration {
+          enum disable {
+            value 0;
+          }
+        }
+      }
+      units "seconds";
+      default "1";
+      description
+        "The delay before the head-end LER programs its data plane and declares the tunnel UP";
+    }
+    leaf tunnel-init-retry-timeout {
+      type uint32 {
+        range "10..600";
+      }
+      units "seconds";
+      default "30";
+      description
+        "Initial retry timeout for tunnel path state";
+    }
+    leaf mbb-prefer-current-hops {
+      type boolean;
+      default "false";
+      description
+        "Select preference to use the current hops for Make-Before-Break (MBB)";
+    }
+    container fast-retry {
+      description
+        "Enter the fast-retry context";
+      leaf p2p-active-path-fast-retry-timer {
+        type uint32 {
+          range "1..10";
+        }
+        units "seconds";
+        description
+          "Fast retry timer for active path of P2P tunnel";
+      }
+      leaf p2p-secondary-path-fast-retry-timer {
+        type uint32 {
+          range "1..10";
+        }
+        units "seconds";
+        description
+          "Fast retry timer for secondary path of P2P tunnel";
+      }
+    }
+    container least-fill {
+      must 'min-threshold <= reoptimization-threshold' {
+        error-message "min-threshold cannot be higher than reoptimization-threshold";
+      }
+      leaf min-threshold {
+        type srl-comm:percentage;
+        default "5";
+        description
+          "Least-fill minimum threshold value.";
+      }
+      leaf reoptimization-threshold {
+        type srl-comm:percentage;
+        default "10";
+        description
+          "Least-fill reoptimization threshold value.";
+      }
+      description
+        "Enter the least-fill context";
+    }
+    container tunnel-history {
+      presence "Enable the tunnel-history context";
+      description
+        "Enter the tunnel-history context";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "enable";
+        description
+          "Administrative state of tunnel history recording";
+      }
+    }
+  }
+
+  grouping admin-group-constraints {
+    leaf-list include-any {
+      type leafref {
+        path "/srl-netinst:network-instance/srl-te:traffic-engineering/srl-te:admin-groups/srl-te:group/srl-te:name";
+      }
+      max-elements 32;
+      description
+        "List of references to named admin groups any of which must be included in path computation";
+    }
+    leaf-list exclude-all {
+      type leafref {
+        path "/srl-netinst:network-instance/srl-te:traffic-engineering/srl-te:admin-groups/srl-te:group/srl-te:name";
+      }
+      max-elements 32;
+      description
+        "List of references to named admin groups which must be excluded in path computation";
+    }
+  }
+
+  grouping p2p-path-common-state {
+    description
+      "SR Linux RSVP-TE Tunnel state";
+    leaf oper-state {
+      srl-exts:show-importance "high";
+      type srl-comm:oper-state;
+      config false;
+      description
+        "The operational state of the point-to-point path";
+    }
+    leaf oper-state-changes {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "Number of operational state transitions for this tunnel path.";
+    }
+    leaf last-oper-change-time {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Time when operational state of this tunnel path last changed.";
+    }
+    leaf lsp-id {
+      type uint16 {
+        range "1..65535";
+      }
+      config false;
+      description
+        "LSP ID for this tunnel path.";
+    }
+    leaf path-state {
+      type enumeration {
+        enum active {
+          value 2;
+        }
+        enum inactive {
+          value 3;
+        }
+      }
+      config false;
+      description
+        "Working state of this tunnel path.";
+    }
+    leaf init-retry-timer-expiry {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "When the RSVP Path message state will timeout after the initial Path message has been sent.";
+    }
+    leaf next-retry-attempt {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Time of the next retry attempt to bring up this tunnel path.";
+    }
+    leaf fast-retry {
+      type boolean;
+      config false;
+      description
+        "Next retry attempt uses fast retry timer.";
+    }
+    leaf retry-attempts {
+      type uint32;
+      config false;
+      description
+        "Number of attempts to bring up this tunnel path.";
+    }
+    leaf local-cspf-requests {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "Number of CSPF path computation requests for this tunnel path.";
+    }
+    leaf fail-code {
+      type srl-mpls-rsvp-tunn-type:tunnel-fail-code;
+      config false;
+      description
+        "Reason code for tunnel path failure.";
+    }
+    leaf fail-node-address {
+      type srl-comm:ip-address;
+      config false;
+      description
+        "IP address of the node at which the tunnel path failed.";
+    }
+    container recorded-hop-list {
+      config false;
+      description
+        "Enter the recorded-hop-list context
+
+         Recorded hop list for this tunnel path.";
+      list hop {
+        key "hop-index";
+        uses srl-mpls-rsvp-comm:computed-or-recorded-hop-key;
+        uses srl-mpls-rsvp-comm:recorded-hop-state;
+      }
+    }
+    container computed-hop-list {
+      config false;
+      description
+        "Enter the computed-hop-list context
+
+         Computed hop list for this tunnel path.";
+      list hop {
+        key "hop-index";
+        uses srl-mpls-rsvp-comm:computed-or-recorded-hop-key;
+        uses srl-mpls-rsvp-comm:computed-hop-state;
+      }
+    }
+    leaf oper-setup-priority {
+      type uint32 {
+        range "0..7";
+      }
+      config false;
+      description
+        "Setup priority used by the operational tunnel path.";
+    }
+    leaf oper-hold-priority {
+      type uint32 {
+        range "0..7";
+      }
+      config false;
+      description
+        "Hold priority used by the operational tunnel path.";
+    }
+    leaf oper-record {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path is recording all the traversed hops.";
+    }
+    leaf oper-record-label {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path is recording the label allocated at
+         each traversed node.";
+    }
+    leaf oper-hop-limit {
+      type uint32 {
+        range "0..255";
+      }
+      config false;
+      description
+        "Maximum hop limit used by the operational tunnel path.";
+    }
+    leaf-list oper-admin-group-include-any {
+      type uint32;
+      config false;
+      description
+        "Bitmap which lists admin groups included in the operational
+         tunnel path.";
+    }
+    leaf-list oper-admin-group-exclude-all {
+      type uint32;
+      config false;
+      description
+        "Bitmap which lists admin groups excluded in the operational
+         tunnel path.";
+    }
+    leaf oper-least-fill {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path was computed using the least-fill
+         path selection method.";
+    }
+    leaf least-fill-reoptimization-eligible {
+      type boolean;
+      config false;
+      description
+        "Tunnel path is eligible for reoptimization on the basis
+         of available bandwidth.";
+    }
+    leaf oper-adspec {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path has ADSPEC object included in RSVP messages.";
+    }
+    leaf oper-propagate-admin-group {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path has propagation of admin-groups enabled.";
+    }
+    leaf inter-area {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path is inter-area.";
+    }
+    leaf computed-metric {
+      type uint32;
+      config false;
+      description
+        "Metric of the traffic engineered path returned by the IGP.";
+    }
+    leaf oper-metric-type {
+      type enumeration {
+        enum igp {
+          value 1;
+          description
+            "IGP metric was used to compute the operational tunnel path.";
+        }
+        enum te {
+          value 2;
+          description
+            "TE metric was used to compute the operational tunnel path.";
+        }
+      }
+      config false;
+      description
+        "Type of metric that was used to compute the operational tunnel path.";
+    }
+    leaf oper-metric {
+      type uint32;
+      config false;
+      description
+        "Operational metric for this tunnel path.";
+    }
+    leaf oper-mtu {
+      type uint32;
+      config false;
+      description
+        "Operational maximum transmission unit (MTU) for this tunnel path.";
+    }
+    leaf negotiated-mtu {
+      type uint32;
+      config false;
+      description
+        "Maximum transmission unit (MTU) that was negotiated during
+         establishment of this tunnel path.";
+    }
+    leaf oper-bandwidth {
+      type uint32;
+      units "megabps";
+      config false;
+      description
+        "Amount of bandwidth that has been reserved for the operational
+         tunnel path.";
+    }
+    leaf degraded {
+      type boolean;
+      config false;
+      description
+        "Tunnel path is in degraded state.";
+    }
+    leaf degraded-reason {
+      type bits {
+        bit frr-in-use {
+          position 0;
+          description
+            "Tunnel path is using fast reroute.";
+        }
+        bit soft-preempted {
+          position 1;
+          description
+            "Tunnel path is soft preempted.";
+        }
+      }
+      config false;
+      description
+        "Reason for tunnel path being in degraded state.";
+    }
+    leaf last-reoptimization-attempt {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Time of the last reoptimization attempt for this tunnel path.";
+    }
+    container mbb {
+      config false;
+      description
+        "Enter the mbb context";
+      container last-mbb {
+        description
+          "Enter the last-mbb context
+
+           The last make-before-break (MBB) operational information.";
+        leaf type {
+          type srl-mpls-rsvp-tunn-type:mbb-type;
+          config false;
+          description
+            "Type of MBB.";
+        }
+        leaf end-time {
+          type srl-comm:date-and-time-delta;
+          config false;
+          description
+            "Time when the last MBB ended.";
+        }
+        leaf metric {
+          type uint32;
+          config false;
+          description
+            "Metric of the traffic engineered path prior to the last MBB.";
+        }
+        leaf status {
+          type enumeration {
+            enum success {
+              value 2;
+            }
+            enum fail {
+              value 3;
+            }
+          }
+          config false;
+          description
+            "Last MBB was successful or failed.";
+        }
+        leaf fail-code {
+          type srl-mpls-rsvp-tunn-type:tunnel-fail-code;
+          config false;
+          description
+            "Reason code for the last MBB failure.";
+        }
+        leaf signaled-bw {
+          type uint32;
+          config false;
+          description
+            "Bandwidth used to signal the last MBB.";
+        }
+      }
+      container in-progress-mbb {
+        config false;
+        description
+          "Enter the in-progress-mbb context
+
+           The in-progress make-before-break (MBB) operational information.";
+        leaf type {
+          type srl-mpls-rsvp-tunn-type:mbb-type;
+          config false;
+          description
+            "Type of the MBB.";
+        }
+        leaf start-time {
+          type srl-comm:date-and-time-delta;
+          config false;
+          description
+            "Time when the in-progress MBB started.";
+        }
+        leaf next-retry-attempt {
+          type srl-comm:date-and-time-delta;
+          config false;
+          description
+            "Next attempt to bring up the MBB path.";
+        }
+        leaf retry-attempts {
+          type uint32;
+          config false;
+          description
+            "Number of attempts to bring up the MBB path.";
+        }
+        leaf fail-code {
+          type srl-mpls-rsvp-tunn-type:tunnel-fail-code;
+          config false;
+          description
+            "Reason code for the in-progress MBB failure.";
+        }
+        leaf fail-node-address {
+          type srl-comm:ipv4-address;
+          config false;
+          description
+            "IP address of the node at which the MBB path failed.";
+        }
+        leaf init-retry-timer-expiry {
+          type srl-comm:date-and-time-delta;
+          config false;
+          description
+            "When the RSVP Path message state will timeout after the initial Path message has been sent.";
+        }
+        leaf signaled-bw {
+          type uint32;
+          config false;
+          description
+            "Bandwidth used to signal the MBB path.";
+        }
+      }
+    }
+  }
+
+  grouping frr-state {
+    description
+      "Fast reroute state";
+    leaf oper-frr-node-protect {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path has FRR node protection enabled.";
+    }
+    leaf oper-frr-hop-limit {
+      type uint32 {
+        range "0..255";
+      }
+      config false;
+      description
+        "FRR hop limit used by the operational tunnel path.";
+    }
+    leaf oper-frr-propagate-admin-group {
+      type boolean;
+      config false;
+      description
+        "Operational tunnel path has propagation of admin-groups in FRR object enabled.";
+    }
+  }
+
+  grouping p2p-primary-path-state {
+    description
+      "SR Linux point-to-point (P2P) primary path state";
+    container fast-reroute {
+      config false;
+      leaf oper-fast-reroute {
+        type boolean;
+        config false;
+        description
+          "Operational tunnel has fast reroute enabled.";
+      }
+      uses frr-state;
+      description
+        "Enter the fast-reroute context";
+    }
+  }
+
+  grouping p2p-secondary-path-state {
+    description
+      "SR Linux point-to-point (P2P) secondary path state";
+    leaf srlg-disjoint {
+      type boolean;
+      config false;
+      description
+        "This tunnel path is SRLG disjoint from the primary tunnel path.";
+    }
+  }
+
+  grouping p2p-path-config {
+    description
+      "SR Linux point-to-point (P2P) path configuration";
+    leaf p2p-path-name {
+      type srl-mpls-rsvp-tunn-type:p2p-path-name;
+      description
+        "P2P path name";
+    }
+    leaf explicit-path-name {
+      type leafref {
+        path "../../../../named-explicit-path/path-name";
+      }
+      description
+        "Name of the explicit path to use
+
+         If no value is configured, then an empty path is used.";
+    }
+    leaf admin-state {
+      type srl-comm:admin-state;
+      default "enable";
+      description
+        "Administrative state of the P2P path";
+    }
+    leaf adaptive {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "adaptive only applicable for type p2p-rsvp";
+      }
+      type boolean;
+      description
+        "Enable make-before-break functionality.
+
+         If no value is configured, the setting is inherited from the tunnel configuration.";
+    }
+    leaf bandwidth {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "bandwidth only applicable for type p2p-rsvp";
+      }
+      type srl-mpls-rsvp-tunn-type:path-bandwidth;
+      default "0";
+      description
+        "Amount of bandwidth to be reserved";
+    }
+    leaf hop-limit {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "hop-limit only applicable for types p2p-rsvp";
+      }
+      type srl-mpls-rsvp-tunn-type:hop-limit;
+      description
+        "Maximum number of hops that the P2P path can traverse including ingress and egress routers.
+
+         If no value is configured, the setting is inherited from the tunnel configuration.";
+    }
+    leaf record {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "record only applicable for types p2p-rsvp";
+      }
+      type boolean;
+      default "true";
+      description
+        "Enable recording of all hops that the P2P path traverses";
+    }
+    leaf record-label {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "record-label only applicable for types p2p-rsvp";
+      }
+      must 'not(. = true()) or ../record = true()' {
+        error-message "record-label can only be enabled when record is enabled";
+      }
+      type boolean;
+      default "true";
+      description
+        "Enable recording of labels at each hop that the P2P path traverses";
+    }
+    container priority {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "Only applicable to type p2p-rsvp";
+      }
+      must 'hold-priority <= setup-priority' {
+        error-message "hold-priority cannot be greater than setup-priority";
+      }
+      description
+        "Enter the priority context";
+      leaf setup-priority {
+        type srl-mpls-rsvp-tunn-type:priority;
+        default "7";
+        description
+          "Setup priority for P2P path";
+      }
+      leaf hold-priority {
+        type srl-mpls-rsvp-tunn-type:priority;
+        default "0";
+        description
+          "Hold priority for P2P path";
+      }
+    }
+    container admin-group-constraints {
+      uses admin-group-constraints;
+      description
+        "Enter the admin-group-constraints context
+
+         Admin group constraints for the P2P path.
+
+         If include-any or exclude-all is empty or not configured, that
+         constraint is inherited from the tunnel configuration.";
+    }
+  }
+
+  grouping constrained-path-tunnel-config {
+    description
+      "SR Linux Constrained path tunnel configuration";
+    leaf admin-state {
+      type srl-comm:admin-state;
+      default "disable";
+      description
+        "Administrative state of the tunnel";
+    }
+    leaf type {
+      type enumeration {
+        enum p2p-rsvp {
+          value 2;
+        }
+      }
+      mandatory true;
+      description
+        "Tunnel type";
+    }
+    leaf source {
+      type srl-comm:ipv4-address-unicast;
+      description
+        "Source address for the tunnel
+
+         By default, this is the TE Router ID of this ingress LER";
+    }
+    leaf hop-limit {
+      type srl-mpls-rsvp-tunn-type:hop-limit;
+      default "255";
+      description
+        "Maximum number of hops that the tunnel can traverse including ingress and egress routers";
+    }
+    leaf rsvp-resv-style {
+      must "not(../fast-reroute) or . != 'ff'" {
+        error-message "rsvp-resv-style ff is not supported when fast-reroute is configured";
+      }
+      type enumeration {
+        enum se {
+          value 1;
+        }
+        enum ff {
+          value 2;
+        }
+      }
+      default "se";
+      description
+        "RSVP reservation style";
+    }
+    leaf adaptive {
+      type boolean;
+      default "true";
+      description
+        "Enable make-before-break functionality";
+    }
+    leaf propagate-admin-group {
+      type boolean;
+      default "false";
+      description
+        "Enable propagation of admin groups via session attribute object";
+    }
+    leaf retry-limit {
+      type uint32 {
+        range "1..10000";
+      }
+      description
+        "Number of attempts to re-establish LSP path after it fails";
+    }
+    leaf retry-timer {
+      type uint32 {
+        range "1..600";
+      }
+      units "seconds";
+      default "30";
+      description
+        "Time for LSP path re-establishment attempts after failure";
+    }
+    leaf path-computation-method {
+      type enumeration {
+        enum local-cspf {
+          value 2;
+        }
+      }
+      default "local-cspf";
+      description
+        "Path computation method";
+    }
+    leaf metric-type {
+      type enumeration {
+        enum igp {
+          value 1;
+        }
+        enum te {
+          value 2;
+        }
+      }
+      default "igp";
+      description
+        "Metric type used for path computation";
+    }
+    leaf soft-preemption {
+      type boolean;
+      default "true";
+      description
+        "Enable soft preemption";
+    }
+    container admin-group-constraints {
+      uses admin-group-constraints;
+      description
+        "Enter the admin-group-constraints context
+
+         Admin group constraints";
+    }
+    container fast-reroute {
+      presence "Enable the fast-reroute context";
+      must "not(../type) or ../type = 'p2p-rsvp'" {
+        error-message "fast-reroute only applicable for type p2p-rsvp";
+      }
+      description
+        "Enter the fast-reroute context";
+      leaf hop-limit {
+        type uint32 {
+          range "0..255";
+        }
+        default "16";
+        description
+          "Total number of additional hops backup tunnel can take";
+      }
+      leaf propagate-admin-group {
+        type boolean;
+        default "false";
+        description
+          "Enable propagation of admin group constraints in fast reroute object";
+      }
+      leaf node-protect {
+        type boolean;
+        default "true";
+        description
+          "Enable node protection";
+      }
+    }
+  }
+
+  grouping p2p-tunnel-config {
+    leaf destination {
+      type srl-comm:ipv4-address-unicast;
+      description
+        "Destination address for the P2P tunnel";
+      mandatory true;
+    }
+    leaf revert-timer {
+      must "not(../../type) or ../../type = 'p2p-rsvp' " {
+        error-message "revert-timer only applicable for type p2p-rsvp";
+      }
+      type uint32 {
+        range "1..4320";
+      }
+      units "minutes";
+      description
+        "Revert timer for the P2P tunnel";
+    }
+    leaf metric {
+      must "not(../../type) or ../../type = 'p2p-rsvp' " {
+        error-message "metric only applicable for type p2p-rsvp";
+      }
+      type uint32 {
+        range "1..16777215";
+      }
+      description
+        "Force the P2P tunnel metric to a constant value";
+    }
+    leaf use-computed-metric {
+      must "not(../../type) or ../../type = 'p2p-rsvp' " {
+        error-message "use-computed-metric only applicable for type p2p-rsvp";
+      }
+      must 'not(. = true() and ../metric)' {
+        error-message "use-computed-metric cannot be enabled when metric is configured";
+      }
+      type boolean;
+      default "false";
+      description
+        "Use computed metric in TTM for the P2P tunnel";
+    }
+    leaf adspec {
+      must "not(../../type) or ../../type = 'p2p-rsvp' " {
+        error-message "adspec only applicable for type p2p-rsvp";
+      }
+      type boolean;
+      default "false";
+      description
+        "Include ADSPEC object in RSVP messages";
+    }
+    leaf least-fill {
+      must "not(../../type) or ../../type = 'p2p-rsvp' " {
+        error-message "least-fill only applicable for type p2p-rsvp";
+      }
+      must "not(. = true()) or not(../../path-computation-method) or ../../path-computation-method = 'local-cspf'" {
+        error-message "least-fill requires path-computation-method local-cspf";
+      }
+      type boolean;
+      default "false";
+      description
+        "Enable least-fill path selection method.";
+    }
+  }
+
+  grouping p2p-tunnel-state {
+    description
+      "State of the Point-to-Point tunnel";
+    leaf oper-metric {
+      type uint32;
+      config false;
+      description
+        "Operational metric for this tunnel.";
+    }
+    leaf revert-timer-expiry {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Time when the revert timer will expire causing the tunnel
+         to revert to the primary path.";
+    }
+    leaf path-changes {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "Number of times the active path for this tunnel has changed.";
+    }
+    leaf last-path-change-time {
+      type srl-comm:date-and-time-delta;
+      config false;
+      description
+        "Time when the active path for this tunnel last changed.";
+    }
+    leaf configured-paths {
+      type uint32;
+      config false;
+      description
+        "Number of paths configured for this tunnel.";
+    }
+    leaf standby-paths {
+      type uint32;
+      config false;
+      description
+        "Number of standby paths configured for this tunnel.";
+    }
+    leaf operational-paths {
+      type int32;
+      config false;
+      description
+        "Number of operational paths for this tunnel.";
+    }
+    leaf active-path {
+      type srl-mpls-rsvp-tunn-type:path-name;
+      config false;
+      description
+        "Active path for this tunnel.";
+    }
+  }
+
+  grouping p2p-secondary-config {
+    leaf path-preference {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "path-preference only applicable for type p2p-rsvp";
+      }
+      must '../standby = true() or . = 255' {
+        error-message "path-preference can only be configured for standby secondary paths";
+      }
+      type int32 {
+        range "1..255";
+      }
+      default "255";
+      description
+        "Path preference for the secondary standby path";
+    }
+    leaf srlg {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "srlg only applicable for type p2p-rsvp";
+      }
+      type boolean;
+      default "false";
+      description
+        "Use SRLG constraint in secondary path computation for an LSP at the head-end LER";
+    }
+    leaf standby {
+      must "not(../../../type) or ../../../type = 'p2p-rsvp'" {
+        error-message "standby only applicable for type p2p-rsvp";
+      }
+      type boolean;
+      default "false";
+      description
+        "Configure this secondary path to be a standby";
+    }
+  }
+
+  grouping constrained-path-tunnel-top {
+    container constrained-path {
+      presence "Configure Constrained Path Tunnels";
+      must "(../../../srl-netinst:type = 'srl-netinst:default')" {
+        error-message "Constrained path tunnels are only allowed on network-instance of type default";
+      }
+      description
+        "Top-level configuration and operational state for Constrained Path Tunnels";
+      container global {
+        description
+          "Enter the global context";
+        uses constrained-path-tunnel-global;
+      }
+      uses named-explicit-path-top;
+      uses constrained-path-tunnel-global-dump-commands;
+      uses constrained-path-tunnel-global-clear-commands;
+      list tunnel {
+        key "tunnel-name";
+        must "not(type = 'p2p-rsvp') or p2p-tunnel-attributes" {
+          error-message "p2p-tunnel-attributes must be configured for type p2p-rsvp";
+        }
+        description
+          "List of RSVP-TE tunnels";
+        leaf tunnel-name {
+          type srl-mpls-rsvp-tunn-type:tunnel-name;
+          description
+            "Name of the RSVP-TE tunnel";
+        }
+        uses constrained-path-tunnel-config;
+        uses constrained-path-tunnel-state;
+        uses constrained-path-tunnel-dump-commands;
+        uses constrained-path-tunnel-clear-commands;
+        container p2p-tunnel-attributes {
+          presence "Configure Point-to-Point Tunnels";
+          must "not(../type) or ../type = 'p2p-rsvp'" {
+            error-message "Point-to-Point constrained path tunnels must be of type p2p-rsvp";
+          }
+          description
+            "Container for P2P tunnel parameters";
+          uses p2p-tunnel-config;
+          uses p2p-tunnel-state;
+          list p2p-primary {
+            must "not(../../type) or ../../type = 'p2p-rsvp'" {
+              error-message "Primary only applicable for type p2p-rsvp";
+            }
+            key "p2p-path-name";
+            max-elements 1;
+            description
+              "Enter the primary list instance";
+            uses p2p-path-config {
+              refine "record" {
+                must 'not(../../../fast-reroute) or . = true()' {
+                  error-message "record must be enabled when fast-reroute is configured";
+                }
+              }
+              refine "record-label" {
+                must 'not(../../../fast-reroute) or . = true()' {
+                  error-message "record-label must be enabled when fast-reroute is configured";
+                }
+              }
+            }
+            uses p2p-path-common-state;
+            uses p2p-primary-path-state;
+          }
+          list p2p-secondary {
+            must "not(../../type) or ../../type = 'p2p-rsvp'" {
+              error-message "Secondary only applicable for type p2p-rsvp";
+            }
+            must 'not(../p2p-primary[p2p-path-name = current()/p2p-path-name])' {
+              error-message "Secondary name must be different from primary name";
+            }
+            key "p2p-path-name";
+            max-elements 8;
+            description
+              "Enter the secondary list instance";
+            uses p2p-path-config;
+            uses p2p-secondary-config;
+            uses p2p-path-common-state;
+            uses p2p-secondary-path-state;
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-mpls:mpls/srl-mpls:lsps" {
+    if-feature "srl-feat:rsvp";
+    uses constrained-path-tunnel-top;
+  }
+
+  augment "/srl-netinst:network-instance/srl-mpls:mpls/srl-mpls:lsp-totals" {
+    if-feature "srl-feat:rsvp";
+    uses tunnel-counters;
+  }
+}

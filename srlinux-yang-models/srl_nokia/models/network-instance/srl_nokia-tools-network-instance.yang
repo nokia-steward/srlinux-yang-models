@@ -1,0 +1,91 @@
+module srl_nokia-tools-network-instance {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:net-inst:tools-network-instance";
+  prefix srl-tool-netinst;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational commands on system.
+
+     Copyright 2018-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+  revision 2018-12-12 {
+    description
+      "SR Linux 19.12.1";
+  }
+
+  list network-instance {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "A unique name identifying the network instance";
+    }
+    container protocols {
+      description
+        "Enter the protocols context
+
+         The routing protocols that are enabled for this
+         network-instance.";
+    }
+    container bridge-table {
+      description
+        "Enter the bridge-table context
+
+         bridge-table";
+    }
+    list connection-point {
+      if-feature "srl-feat:connection-point";
+      description
+        "Connection-point information.";
+      key "name";
+      leaf name {
+        type string;
+        description
+          "A unique name identifying the connection-point";
+      }
+      container bridge-table {
+        description
+          "Enter the bridge-table context
+
+           bridge-table";
+      }
+    }
+    container segment-routing {
+      if-feature "srl-feat:segment-routing-shared-sid-lsp-stats";
+      description
+        "Enter the segment-routing context
+
+         segment-routing info";
+    }
+  }
+}

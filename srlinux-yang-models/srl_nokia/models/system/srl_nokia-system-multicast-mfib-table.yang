@@ -1,0 +1,142 @@
+module srl_nokia-system-multicast-mfib-table {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mfib:system-multicast-mfib-table";
+  prefix srl-sys-mult-mfib-tbl;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-system-multicast {
+    prefix srl-sys-mult;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines system Multicast Forwarding Information Base (MFIB) operational
+     state data.
+
+     Copyright 2023-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+
+  grouping system-mfib-table-top {
+    container multicast-forwarding-information-base {
+      config false;
+      description
+        "Enter the multicast-forwarding-information-base context
+
+         System Multicast Forwarding Information Base table";
+      list multicast-route {
+        description
+          "List of all the MFIB entries in the system";
+        key "network-instance source group";
+        leaf network-instance {
+          type leafref {
+            path "/srl-netinst:network-instance/srl-netinst:name";
+          }
+          description
+            "Indicates that the MFIB entry is associated to this network instance";
+        }
+        leaf source {
+          type srl-comm:ip-address;
+          description
+            "Source IP address of the MFIB entry";
+        }
+        leaf group {
+          type srl-comm:ip-address;
+          description
+            "Multicast group address of the MFIB entry";
+        }
+        leaf line-card-replication-index {
+          type uint64;
+          srl-exts:show-importance "high";
+          default "0";
+          description
+            "Line card Replication Index (LRID) allocated by mfib_mgr
+
+             Upon programming an MFIB entry, mfib_mgr requests a Multicast Identifier (MCID) to mcid_mgr
+             and based on the response with an allocated MCID, mfib_mgr allocates a LRID for the entry.
+             A value 0 indicates that no MCID was received for the entry, and therefore the MFIB entry
+             cannot forward multicast traffic.";
+        }
+        leaf last-update {
+          type srl-comm:date-and-time-delta;
+          srl-exts:show-importance "high";
+          description
+            "Last update of this MFIB entry";
+        }
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    srl-exts:first-released "23.3.1";
+    uses system-mfib-table-top;
+  }
+
+  grouping replication-id-usage-common {
+    container statistics {
+      config false;
+      leaf maximum-ids {
+        type int32;
+        description
+          "Maximum number of replication ids available in the system";
+        srl-exts:show-importance "high";
+      }
+      leaf current-usage {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of replication ids that are in use on the system";
+        srl-exts:show-importance "high";
+      }
+      leaf total-pending {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of replication ids pending allocation on the system";
+        srl-exts:show-importance "high";
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping replication-id-top {
+    container replication-ids {
+      config false;
+      description
+        "Enter the replication-ids context
+
+         system replication id information";
+      uses replication-id-usage-common;
+    }
+  }
+
+  augment "/srl-sys:system/srl-sys-mult:multicast" {
+    uses replication-id-top;
+  }
+}

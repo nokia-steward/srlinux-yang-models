@@ -1,0 +1,458 @@
+module srl_nokia-boot {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:boot";
+  prefix srl-boot;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data related to the booting the system.
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2023-07-31 {
+    description
+      "SR Linux 23.7.1";
+  }
+  revision 2022-06-30 {
+    description
+      "SR Linux 22.6.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  typedef client-id {
+    type enumeration {
+      enum serial {
+        description
+          "Use the chassis serial number as the client ID";
+      }
+    }
+  }
+
+  grouping boot-images-top {
+    leaf-list image {
+      type srl-comm:local-file-no-path;
+      config false;
+      max-elements 3;
+      ordered-by user;
+      description
+        "Ordered list of local images used to boot the system
+
+               This directly translates into boot configuration in grub, where the images are tried in the order specified by the user. Images are sourced via the internal SD card, and the value passed is the folder that contains the initramfs, kernel, and squashfs image. The search path for these directories is /mnt/nokiaos/<folder>";
+    }
+    leaf golden-image {
+      if-feature "srl-feat:factory-reset";
+      type srl-comm:local-file-no-path;
+      config false;
+      description
+        "The local image the system reverts to when a factory reset operation is requested
+
+         The value is the folder that contains the initramfs, kernel, and squashfs image.
+         The search path for these directories is /mnt/nokiaos/<folder>";
+    }
+    action set-golden-image {
+      srl-exts:telemetry-capability "unsupported";
+      if-feature "srl-feat:factory-reset and srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+      description
+        "Execute the set-golden-image action
+
+         Sets the golden image the system uses
+
+         This command selects an image to act as a golden-image
+         to which the system reverts when a factory reset operation is requested.";
+      input {
+        leaf image {
+          type srl-comm:local-file-no-path;
+          mandatory true;
+          description
+            "Sets the golden image the system uses
+
+             This command selects an image to act as a golden-image
+             to which the system reverts when a factory reset operation is requested.";
+        }
+      }
+    }
+    action clear-golden-image {
+      srl-exts:telemetry-capability "unsupported";
+      if-feature "srl-feat:factory-reset and srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+      description
+        "Execute the clear-golden-image action
+
+         Unset the golden-image";
+    }
+  }
+
+  grouping boot-autoboot-top {
+    container autoboot {
+      description
+        "Enter the autoboot context
+
+         Top-level container for configuration and state data related to autobooting the system";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        description
+          "Administratively enable or disable autoboot functionality";
+      }
+      leaf oper-state {
+        type string;
+        config false;
+        description
+          "The current operational status of the autoboot process";
+      }
+      leaf timeout {
+        type uint32 {
+          range "200 .. 3600";
+        }
+        units "seconds";
+        description
+          "Sets the timeout for each attempt to autoboot";
+      }
+      leaf attempts {
+        type uint8 {
+          range "1 .. 10";
+        }
+        description
+          "Sets the amount of executions to try autoboot, before rebooting the system";
+      }
+      leaf-list interface {
+        type leafref {
+          path "/srl-ifs:interface/srl-ifs:name";
+        }
+        must "not (starts-with(. , 'mgmtA') or starts-with(. , 'mgmtB'))" {
+          error-message "unsupported interface";
+        }
+        description
+          "Sets the interface(s) to use for autoboot functionality
+
+           When not configured, out-of-band provisioning selects mgmt0 when it has link,
+           otherwise a suitable fallback management interface. In-band provisioning runs
+           DHCP on all front-panel ports of a fixed platform, or on the first five ports of
+           line card 1 of a chassis.";
+      }
+      leaf client-id {
+        type client-id;
+        description
+          "The client ID to use on outgoing DHCP requests";
+      }
+      leaf-list mode {
+        type enumeration {
+          enum ztp {
+            description
+              "start ztp in normal mode. will attempt inband in case out of band fails";
+          }
+          enum secure {
+            description
+              "start ztp in secure mode. will attempt out of band connection to a secure bootstrap server";
+          }
+          enum inband {
+            description
+              "start ztp in inband mode. out-of-band will not run";
+          }
+          enum ooband {
+            description
+              "start ztp in out-of-band mode. inband will not run";
+          }
+          enum localdisk {
+            description
+              "start ztp using provisioning information available on a locally mounted disk";
+          }
+        }
+      }
+    }
+  }
+
+  grouping boot-fips-top {
+    container fips-140 {
+      description
+        "Enter the fips-140 context
+
+         Boot up the router in fips-provider mode
+
+         In fips-provider mode only fips approved algorithms are allowed.
+         In addition for fip-provider mode to take effect a reboot is of the router is needed.";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "This leaf contains the configured, desired state of the fips-provider.";
+      }
+      leaf oper-state {
+        config false;
+        type srl-comm:oper-state;
+        description
+          "This leaf contains the operational state of fips-provider.";
+      }
+      leaf oper-down-reason {
+        config false;
+        type enumeration {
+          enum unknown;
+        }
+        description
+          "The reason for not enabling fips operational down";
+      }
+      leaf chassis-reboot-required {
+        config false;
+        type boolean;
+        description
+          "Reads true if the user has committed a change to configurable fips admin-state value and has not yet restarted chassis. The operational value is still the values initialized at the last chassis restart.";
+      }
+      action conditional-test {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-same-io and srl-feat:system-fips-mode";
+        description
+          "Execute the conditional-test action
+
+           Execute an on-demand Conditional Self-Test (CST) to verify the current
+           operational health and compliance of the FIPS module.
+
+           Invoking this command triggers a cryptographic operation (e.g., ECDSA key generation)
+           that forces the module to run the Pairwise Consistency Test (PCT) and the
+           Continuous Random Number Generator Test (CRNGT). The command returns success only
+           if the FIPS provider is loaded, functional, and passes these critical runtime checks.";
+      }
+    }
+  }
+
+  grouping boot-password-top {
+    description
+      "Configuration and state for boot password.";
+    leaf grub-password {
+      description
+        "The leaf container grub boot password";
+      if-feature "srl-feat:grub-password";
+      type srl-comm:grub-password;
+    }
+  }
+
+  grouping boot-bootzstate-top {
+    container bootz {
+      description
+        "Enter the bootz context
+
+         Bootz info";
+      container status {
+        description
+          "Enter the status context
+
+           Bootz state ";
+        leaf bootstate {
+          config false;
+          type string;
+        }
+        leaf bootstate-timestamp {
+          config false;
+          description
+            "The timestamp of the last bootz state";
+          type srl-comm:date-and-time;
+        }
+      }
+      container no-dhcp {
+        config false;
+        description
+          "Enter the no-dhcp context
+
+           Stage and control BootZ provisioning that does not use DHCP
+           option-based bootstrap server discovery.";
+        action initiate {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:bootz-no-dhcp";
+          description
+            "Execute the initiate action
+
+             Initiate BootZ no-dhcp provisioning
+
+             Persists the source subinterface and BootZ URIs, enables autoboot,
+             and sets ztp mode to bootz-no-dhcp. The ztp service is then
+             started, and BootZ gRPC runs over the connectivity the operator
+             configured; no DHCP request is made. The saved configuration is
+             left untouched. When reboot is set, the chassis is rebooted as
+             well.";
+          input {
+            leaf src-interface {
+              type srl-comm:subinterface-all;
+              mandatory true;
+              description
+                "Subinterface used to reach the BootZ server
+
+                 The address and route reaching the BootZ server must already be
+                 configured and saved on this subinterface, for example mgmt0.0
+                 or ethernet-1/1.0.";
+            }
+            leaf bootz-uri {
+              type string {
+                pattern 'bootz://[^,]+(,bootz://[^,]+)*';
+              }
+              mandatory true;
+              description
+                "Comma-separated BootZ server URIs
+
+                 URIs of the BootZ bootstrap servers, for example
+                 bootz://192.0.2.10:50051. Give more than one by separating
+                 them with commas and no spaces; they are tried in the order
+                 given until one of them provisions the device. A value
+                 containing an IPv6 literal has to be quoted, because the CLI
+                 reads square brackets as list delimiters. This action does
+                 not contact any of the servers; provisioning proceeds in the
+                 background.";
+            }
+            leaf reboot {
+              type empty;
+              description
+                "Reboot the chassis after initiating
+
+                 When omitted, BootZ provisioning starts without rebooting.";
+            }
+          }
+        }
+        action reset {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:bootz-no-dhcp";
+          description
+            "Execute the reset action
+
+             Discard BootZ no-dhcp staging
+
+             Stops the run if one is in progress, disables autoboot flags,
+             clears the source interface, BootZ URIs and bootz-no-dhcp mode
+             saved by initiate, and removes the bootstrap server record, the
+             trust anchor and the other supporting ztp files. The saved
+             configuration is left untouched.";
+        }
+        action terminate {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:bootz-no-dhcp";
+          description
+            "Execute the terminate action
+
+             Stop an in-progress BootZ no-dhcp run
+
+             If BootZ is not ongoing, this command is a no-op. The saved
+             configuration, the staged initiate state, the autoboot flags and
+             the supporting ztp files are all retained; use reset to clear
+             them.";
+        }
+      }
+    }
+  }
+
+  grouping boot-top {
+    container boot {
+      description
+        "Enter the boot context
+
+         Top-level container for configuration and state data related to booting the system";
+      uses boot-images-top;
+      uses boot-fips-top;
+      uses boot-autoboot-top;
+      uses boot-password-top;
+      uses boot-bootzstate-top;
+    }
+  }
+
+  grouping system-factory-reset-top {
+    container factory-reset {
+      config false;
+      description
+        "Enter the factory-reset context
+
+         Instruct this device to immediately clean all existing state and boot
+         it in the same condition as it was shipped from factory
+
+         State includes storage, configuration, logs, certificates and licenses.";
+      action reboot {
+        srl-exts:telemetry-capability "unsupported";
+        description
+          "Execute the reboot action
+
+           Issuing this action confirms the destructive operation and the reboot";
+        input {
+          leaf factory-os {
+            type empty;
+            description
+              "Roll back the OS to the same version shipped from factory";
+          }
+          leaf zero-fill {
+            type empty;
+            description
+              "Zero-fill permanent storage where state data is stored";
+          }
+        }
+        output {
+          leaf info {
+            type string;
+            description
+              "Info message returned by the factory-reset operation";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    uses boot-top;
+  }
+
+  augment "/srl-sys:system" {
+    if-feature "srl-feat:cli-tools-cmd-factory-reset";
+    uses system-factory-reset-top;
+  }
+}

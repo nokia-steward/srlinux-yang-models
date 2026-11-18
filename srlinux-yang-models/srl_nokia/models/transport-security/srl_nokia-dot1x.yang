@@ -1,0 +1,95 @@
+module srl_nokia-dot1x {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:dot1x";
+  prefix srl-dot1;
+
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module models dot1x configuration under a interface or a sub-interface
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+
+  grouping dot1x-top {
+    description
+      "Top-level grouping for dot1x";
+    container dot1x {
+      description
+        "Enclosing container for dot1x";
+      if-feature "srl-feat:dot1x-tunnel or srl-feat:dot1x-authenticator";
+      presence "Configures the dot1x parameters";
+      must "starts-with(../../srl-ifs:name, 'ethernet')" {
+        srl-exts:if-feature "not srl-feat:dot1x-authenticator-lag";
+        error-message "dot1x not supported on this interface";
+      }
+      must "starts-with(../../srl-ifs:name, 'ethernet') or starts-with(../../srl-ifs:name, 'lag')" {
+        srl-exts:if-feature "srl-feat:dot1x-authenticator-lag";
+        error-message "dot1x not supported on this interface";
+      }
+      must 'not(../../srl-ifs:breakout-mode)' {
+        error-message "dot1x not configurable when breakout-mode is enabled";
+      }
+    }
+  }
+
+  grouping system-dot1x-top {
+    description
+      "Top-level grouping for system dot1x";
+    container dot1x {
+      description
+        "Enter the dot1x context
+
+         Enclosing container for system dot1x";
+      if-feature "srl-feat:dot1x-tunnel";
+      config false;
+    }
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:ethernet" {
+    if-feature "srl-feat:dot1x-tunnel or srl-feat:dot1x-authenticator";
+    uses dot1x-top;
+  }
+
+  augment "/srl-sys:system" {
+    if-feature "srl-feat:dot1x-tunnel";
+    uses system-dot1x-top;
+  }
+}

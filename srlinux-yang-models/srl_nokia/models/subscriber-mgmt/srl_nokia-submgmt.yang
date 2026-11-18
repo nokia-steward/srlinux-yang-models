@@ -1,0 +1,741 @@
+module srl_nokia-submgmt {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:submgmt:submgmt";
+  prefix srl-submgmt;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-qos {
+    prefix srl-qos;
+  }
+  import srl_nokia-acl {
+    prefix srl-acl;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data
+     related to subscriber management.
+
+     Copyright 2025-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+
+  grouping subscriber-management-hosts {
+    description
+      "Subscriber hosts from state";
+    container hosts {
+      srl-exts:telemetry-capability "sample=1";
+      config false;
+      list host {
+        key "ip-address net-inst-name";
+        description
+          "Host";
+        leaf ip-address {
+          type srl-comm:ip-address;
+          description
+            "IPv4 or IPv6 address of the subscriber host";
+        }
+        leaf mac-address {
+          type srl-comm:mac-address;
+          description
+            "Mac address of the subscriber host";
+        }
+        leaf net-inst-name {
+          type string;
+          description
+            "Network instance name of the subscriber host";
+        }
+        leaf ip-address-prefix-length {
+          type uint32;
+          description
+            "IPv4 or IPv6 address prefix length of the subscriber host";
+        }
+        leaf global-if-id {
+          type uint32;
+          description
+            "Global interface identifier of the subscriber host";
+        }
+        leaf net-inst-id {
+          type uint32;
+          description
+            "Network instance identifier of the subscriber host";
+        }
+      }
+      description
+        "Enter the hosts context";
+    }
+  }
+
+  grouping subscriber-management-top {
+    description
+      "Grouping of reusable elements";
+    container subscriber-management {
+      if-feature "srl-feat:submgmt-fpcx";
+      presence "Configure subscriber-management";
+      description
+        "Top-level configuration and operational state for subscriber management";
+      container profiles {
+        description
+          "Enter the profiles context
+
+           Subscriber management profiles";
+        uses sla-profile;
+        uses subscriber-profile;
+      }
+      container ref-points {
+        description
+          "Enter the ref-points context
+
+           Properties of reference points for communication with external systems";
+      }
+      container services {
+        description
+          "Enter the services context
+
+           Services";
+      }
+      container interfaces {
+        description
+          "Enter the interfaces context
+
+           List of interfaces used by subscriber-management";
+        uses subscriber-interfaces;
+        uses capture-subinterface-top;
+      }
+      uses subscriber-management-hosts;
+    }
+  }
+
+  grouping subscriber-profile-input-qos {
+    description
+      "Grouping of reusable elements";
+    container qos {
+      if-feature "srl-feat:qos";
+      description
+        "Enter the qos context
+
+         Input QoS parameters for the subscriber profile";
+      leaf policer-policy {
+        if-feature "srl-feat:qos-policer-policies";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:policer-policies/srl-qos:policer-policy/srl-qos:name";
+        }
+        description
+          "Reference to a policer-policy";
+      }
+    }
+  }
+
+  grouping subscriber-profile-output-qos {
+    description
+      "Grouping of reusable elements";
+    container qos {
+      if-feature "srl-feat:qos";
+      description
+        "Enter the qos context
+
+         Output QoS parameters for the subscriber profile";
+      leaf queue-scheduling-policy {
+        if-feature "srl-feat:qos-queue-scheduling-policy";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:scheduler-policies/srl-qos:queue-scheduling-policy/srl-qos:name";
+        }
+        description
+          "Reference to a queue-scheduling-policy";
+      }
+    }
+  }
+
+  grouping subscriber-profile {
+    description
+      "Subscriber-profile QoS related configuration data";
+    list subscriber-profile {
+      key "name";
+      description
+        "List of subscriber profiles";
+      leaf name {
+        type srl-comm:name;
+        description
+          "User defined name for the subscriber profile";
+      }
+      container input {
+        description
+          "Enter the input context
+
+           Container with input configuration for the subscriber profile";
+        uses subscriber-profile-input-qos;
+      }
+      container output {
+        description
+          "Enter the output context
+
+           Container with output configuration for the subscriber profile";
+        uses subscriber-profile-output-qos;
+      }
+    }
+  }
+
+  grouping classifiers {
+    description
+      "Grouping of reusable elements";
+    container classifiers {
+      description
+        "Enter the classifiers context
+
+         Input classifier policies";
+      container default {
+        description
+          "Enter the default context
+
+           Container defining default qos parameters for packets that do not match any classification rules";
+        leaf forwarding-class {
+          type leafref {
+            path "/srl-qos:qos/srl-qos:forwarding-classes/srl-qos:forwarding-class/srl-qos:name";
+          }
+          description
+            "Default forwarding class for packets that do no match any classification rules";
+        }
+        leaf profile {
+          type srl-comm:classify-profile;
+          default "out";
+          description
+            "Default profile for packets that do not match any classification rules";
+        }
+      }
+      leaf dot1p-policy {
+        if-feature "srl-feat:qos-dot1p-classifier-policy";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:classifiers/srl-qos:dot1p-policy/srl-qos:name";
+        }
+        description
+          "Reference to a dot1p mapping policy";
+      }
+      leaf dscp-policy {
+        type leafref {
+          path "/srl-qos:qos/srl-qos:classifiers/srl-qos:dscp-policy/srl-qos:name";
+        }
+        description
+          "Reference to a DSCP mapping policy";
+      }
+    }
+  }
+
+  grouping acl {
+    description
+      "Grouping of reusable elements";
+    container acl {
+      description
+        "Enter the acl context
+
+         IPv4 and IPv6 ACL filter(s) associated with this SLA profile, and embedding configuration that selects which position receives dynamic filter entries.";
+      container embedding {
+        description
+          "Enter the embedding context
+
+           Configuration for dynamic ACL filter entry insertion in this direction.";
+        container subscriber-management {
+          description
+            "Enter the subscriber-management context
+
+             Selects the IPv4 and IPv6 ACL filter positions (1 or 2) used for dynamic filter inserts from subscriber management in this direction. When this container is not configured, dynamic inserts use position 1.";
+          leaf ipv4-acl {
+            type uint8 {
+              range "1..2";
+            }
+            default "1";
+            description
+              "IPv4 ACL filter position used for dynamic filter inserts
+
+               Selects position 1 or 2 for acl-filter type ipv4 in this direction. If no ACL filter is configured at that position, or the referenced ACL has no embedding with source subscriber-management, dynamic IPv4 entries are not inserted.";
+          }
+          leaf ipv6-acl {
+            type uint8 {
+              range "1..2";
+            }
+            default "1";
+            description
+              "IPv6 ACL filter position used for dynamic filter inserts
+
+               Selects position 1 or 2 for acl-filter type ipv6 in this direction. If no ACL filter is configured at that position, or the referenced ACL has no embedding with source subscriber-management, dynamic IPv6 entries are not inserted.";
+          }
+        }
+      }
+      list acl-filter {
+        key "name type";
+        unique "type position";
+        max-elements 4;
+        description
+          "IPv4 or IPv6 ACL filter applied to subscriber traffic in this direction
+
+           Up to two IPv4 and two IPv6 ACL filters may be configured per direction. The position leaf selects the filter slot (1 or 2) and must be unique per type.";
+        leaf name {
+          type leafref {
+            path "/srl-acl:acl/srl-acl:acl-filter/srl-acl:name";
+          }
+          must "not (. = 'system' or . = 'capture')" {
+            error-message "The acl-filter name must not be system or capture";
+          }
+          must "/srl-acl:acl/srl-acl:acl-filter[srl-acl:name=current()][srl-acl:type=current()/../type]/srl-acl:owner = 'subscriber-management'" {
+            error-message "The referenced ACL filter must have owner subscriber-management";
+          }
+          description
+            "Reference to the ACL filter policy name
+
+             The referenced ACL filter must exist with this type and must have owner subscriber-management.";
+        }
+        leaf type {
+          type leafref {
+            path "/srl-acl:acl/srl-acl:acl-filter[srl-acl:name=current()/../name]"
+               + "/srl-acl:type";
+          }
+          description
+            "Type of ACL filter
+
+             IPv4 and IPv6 ACL filters are supported on an SLA profile.";
+        }
+        leaf position {
+          type uint8 {
+            range "1..2";
+          }
+          default "1";
+          description
+            "ACL filter position in this direction for this type
+
+             Position 1 and position 2 are the first and second filter slots. Position 2 may be configured without position 1.";
+        }
+      }
+    }
+  }
+
+  grouping sla-profile-input-qos {
+    description
+      "Grouping of reusable elements";
+    container qos {
+      if-feature "srl-feat:qos";
+      description
+        "Enter the qos context
+
+         Input QoS parameters for the SLA profile";
+      leaf input-class-map {
+        if-feature "srl-feat:qos-input-class-map";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:input-class-map/srl-qos:name";
+        }
+        description
+          "Reference to an input-class-map";
+      }
+      uses classifiers;
+      leaf policer-policy {
+        if-feature "srl-feat:qos-policer-policies";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:policer-policies/srl-qos:policer-policy/srl-qos:name";
+        }
+        description
+          "Reference to a policer-policy";
+      }
+    }
+  }
+
+  grouping rewrite-rules {
+    description
+      "Grouping of reusable elements";
+    container rewrite-rules {
+      description
+        "Enter the rewrite-rules context
+
+         Output rewrite rules";
+      leaf dscp-policy {
+        type leafref {
+          path "/srl-qos:qos/srl-qos:rewrite-rules/srl-qos:dscp-policy/srl-qos:name";
+        }
+        description
+          "Reference to a DSCP rewrite-rule policy";
+      }
+      leaf dot1p-policy {
+        if-feature "srl-feat:qos-dot1p-rewrite-policy";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:rewrite-rules/srl-qos:dot1p-policy/srl-qos:name";
+        }
+        description
+          "Reference to a dot1p rewrite policy";
+      }
+    }
+  }
+
+  grouping sla-profile-output-qos {
+    description
+      "Grouping of reusable elements";
+    container qos {
+      if-feature "srl-feat:qos";
+      description
+        "Enter the qos context
+
+         Output QoS parameters for the SLA profile";
+      leaf output-class-map {
+        if-feature "srl-feat:qos-output-class-map";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:output-class-map/srl-qos:name";
+        }
+        description
+          "Reference to an output-class-map";
+      }
+      leaf buffer-allocation-profile {
+        type leafref {
+          path "/srl-qos:qos/srl-qos:buffer-management/srl-qos:buffer-allocation-profile/srl-qos:name";
+        }
+        description
+          "Reference to a buffer-allocation-profile";
+      }
+      uses rewrite-rules;
+      leaf queue-scheduling-policy {
+        if-feature "srl-feat:qos-queue-scheduling-policy";
+        type leafref {
+          path "/srl-qos:qos/srl-qos:scheduler-policies/srl-qos:queue-scheduling-policy/srl-qos:name";
+        }
+        description
+          "Reference to a queue-scheduling-policy";
+      }
+    }
+  }
+
+  grouping sla-profile {
+    description
+      "Sla-profile QoS realted configuration data";
+    list sla-profile {
+      key "name";
+      description
+        "List of SLA profiles";
+      leaf name {
+        type srl-comm:name;
+        description
+          "User defined name for the SLA profile";
+      }
+      container input {
+        description
+          "Enter the input context
+
+           Container with input configuration for the SLA profile";
+        uses sla-profile-input-qos;
+        uses acl;
+      }
+      container output {
+        description
+          "Enter the output context
+
+           Container with output configuration for the SLA profile";
+        uses sla-profile-output-qos;
+        uses acl;
+      }
+    }
+  }
+
+  grouping subscriber-interfaces {
+    description
+      "Grouping of reusable elements";
+    list subscriber-interface {
+      key "name";
+      description
+        "Creates subscriber-interface.
+
+         This is a new type of the interface which is not tied to a physical resource. Instead, it provides object for creating subnets and grouping of physical subinterfaces sharing these subnets.
+         All subinterfaces associated under this subscriber interface must be of the same same type 'routed vs.bridged'.
+         In case of routed-type, none of subinterfaces should have IPv4/Ipv6 subnet associated";
+      leaf name {
+        type srl-comm:name;
+        description
+          "User-configured name for subscriber-interface";
+      }
+      leaf network-instance {
+        type leafref {
+          path "/srl-netinst:network-instance/srl-netinst:name";
+        }
+        description
+          "Defines network-instance this subscriber-interface is using";
+      }
+      container subnets {
+        description
+          "Enter the subnets context
+
+           List of IPv4 and IPv6 subnets";
+        list ipv4-subnet {
+          key "ipv4-prefix";
+          description
+            "List of IPv4 prefixes";
+          leaf ipv4-prefix {
+            type srl-comm:ipv4-prefix;
+            description
+              "IPv4 prefix";
+          }
+        }
+        list ipv6-subnet {
+          key "ipv6-prefix";
+          description
+            "List of IPv6 prefixes";
+          leaf ipv6-prefix {
+            type srl-comm:ipv6-prefix;
+            description
+              "IPv6 prefix";
+          }
+        }
+      }
+      list group-interface {
+        key "name";
+        description
+          "Creates a group-interface within subscriber-management-interface.
+
+           Not sure this is needed. For the moment it is just a place-holder";
+        leaf name {
+          type srl-comm:name;
+          description
+            "User-configured name for group-interface";
+        }
+        list interface {
+          key "interface-id";
+          max-elements 16383;
+          description
+            "List of subinterfaces referenced by subscriber-management-interface";
+          leaf interface-id {
+            type string;
+            must 'not (starts-with(., "_"))' {
+              error-message "reserved interface-id cannot be configured";
+            }
+            must "not (/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:ethernet/srl-ifs:aggregate-id) or
+                              ../interface-ref/interface" {
+              error-message "subscriber-management configuration is not supported on LAG member ports";
+            }
+            description
+              "Identifier for the interface or subinterface";
+          }
+          container interface-ref {
+            description
+              "Enter the interface-ref context
+
+               Reference to an interface and a subinterface";
+            leaf interface {
+              type leafref {
+                path "/srl-ifs:interface/srl-ifs:name";
+              }
+              must "not (string(../subinterface) != '' and starts-with(current(), 'irb'))" {
+                error-message "qos configuration is not supported on IRB sub interface";
+                srl-exts:if-feature "not (srl-feat:qos-irb-subinterface)";
+              }
+              must "starts-with(current(), 'ethernet') or starts-with(current(), 'lag') or string(../subinterface) != ''" {
+                error-message "qos  configuration is not supported on this interface type";
+              }
+              must 'not (/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:ethernet/srl-ifs:aggregate-id)' {
+                error-message "qos configuration is not supported on LAG member ports";
+              }
+              must 'not (/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:breakout-mode)' {
+                error-message "Interfaces with breakout-mode configured are not supported";
+              }
+              description
+                "Reference to a base interface, for example a port or LAG";
+            }
+            leaf subinterface {
+              type leafref {
+                path "/srl-ifs:interface[srl-ifs:name=current()/../interface]/srl-ifs:subinterface/srl-ifs:index";
+              }
+              must '../interface' {
+                error-message "interface must be configured when subinterface is set";
+              }
+              description
+                "Reference to a subinterface
+
+                 This requires the base interface to be specified using the interface leaf in this container";
+            }
+          }
+          container defaults {
+            description
+              "Enter the defaults context
+
+               Default subscriber-management object associated with the given subinterface";
+            leaf sla-profile {
+              type leafref {
+                path "/subscriber-management/profiles/sla-profile/name";
+              }
+              description
+                "Default SLA-profile for all subscriber-hosts created on the given subinterface";
+            }
+            leaf subscriber-profile {
+              type leafref {
+                path "/subscriber-management/profiles/subscriber-profile/name";
+              }
+              description
+                "Subscriber-profile assigned to the subscriber-host";
+            }
+          }
+          list ipv4-static-host {
+            key "ipv4-address mac-address";
+            description
+              "List of IPv4 static-hosts on the subinterface";
+            leaf ipv4-address {
+              type srl-comm:ipv4-address;
+              description
+                "IPv4 address for a static host";
+            }
+            leaf mac-address {
+              type srl-comm:mac-address;
+              description
+                "MAC address for a static host";
+            }
+            leaf sla-profile {
+              type leafref {
+                path "/subscriber-management/profiles/sla-profile/name";
+              }
+              description
+                "SLA-profile assigned to the subscriber-host";
+            }
+            leaf subscriber-profile {
+              type leafref {
+                path "/subscriber-management/profiles/subscriber-profile/name";
+              }
+              description
+                "Subscriber-profile assigned to the subscriber-host";
+            }
+          }
+          list ipv6-static-host {
+            key "ipv6-address mac-address";
+            description
+              "List of IPv6 static-hosts on the subinterface";
+            leaf ipv6-address {
+              type srl-comm:ipv6-address;
+              description
+                "IPv6 address for a static host";
+            }
+            leaf mac-address {
+              type srl-comm:mac-address;
+              description
+                "MAC address for a static host";
+            }
+            leaf sla-profile {
+              type leafref {
+                path "/subscriber-management/profiles/sla-profile/name";
+              }
+              description
+                "SLA-profile assigned to the subscriber-host";
+            }
+            leaf subscriber-profile {
+              type leafref {
+                path "/subscriber-management/profiles/subscriber-profile/name";
+              }
+              description
+                "Subscriber-profile assigned to the subscriber-host";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping capture-subinterface-top {
+    description
+      "Grouping of reusable elements";
+    list capture-subinterface {
+      key "name";
+      description
+        "Capture subinterface";
+      leaf name {
+        type srl-comm:name;
+        description
+          "User-configured name for capture-subinterface";
+      }
+      leaf network-instance {
+        type leafref {
+          path "/srl-netinst:network-instance/srl-netinst:name";
+        }
+        description
+          "Defines network-instance this subscriber-interface is using";
+      }
+      container interface-ref {
+        description
+          "Enter the interface-ref context
+
+           Reference to an interface and a subinterface";
+        leaf interface {
+          type leafref {
+            path "/srl-ifs:interface/srl-ifs:name";
+          }
+          must "not (string(../subinterface) != '' and starts-with(current(), 'irb'))" {
+            error-message "qos configuration is not supported on IRB sub interface";
+            srl-exts:if-feature "not (srl-feat:qos-irb-subinterface)";
+          }
+          must "starts-with(current(), 'ethernet') or starts-with(current(), 'lag') or string(../subinterface) != ''" {
+            error-message "qos  configuration is not supported on this interface type";
+          }
+          must 'not (/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:ethernet/srl-ifs:aggregate-id)' {
+            error-message "qos configuration is not supported on LAG member ports";
+          }
+          must 'not (/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:breakout-mode)' {
+            error-message "Interfaces with breakout-mode configured are not supported";
+          }
+          description
+            "Reference to a base interface, for example a port or LAG";
+        }
+        leaf subinterface {
+          type leafref {
+            path "/srl-ifs:interface[srl-ifs:name=current()/../interface]/srl-ifs:subinterface/srl-ifs:index";
+          }
+          must '../interface' {
+            error-message "interface must be configured when subinterface is set";
+          }
+          description
+            "Reference to a subinterface
+
+             This requires the base interface to be specified using the interface leaf in this container";
+        }
+      }
+      container defaults {
+        description
+          "Enter the defaults context
+
+           Default subscriber-management objects associated with capture-subinterface";
+        leaf sla-profile {
+          type leafref {
+            path "/subscriber-management/profiles/sla-profile/name";
+          }
+          description
+            "Default SLA-profile for all subscriber-hosts created based on the capture-subinterface";
+        }
+        leaf subscriber-profile {
+          type leafref {
+            path "/subscriber-management/profiles/subscriber-profile/name";
+          }
+          description
+            "Subscriber-profile assigned to the subscriber-hosts created based on this capture-subinterface";
+        }
+      }
+    }
+  }
+
+  uses subscriber-management-top;
+}

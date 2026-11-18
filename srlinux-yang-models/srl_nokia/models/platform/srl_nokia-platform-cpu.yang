@@ -1,0 +1,264 @@
+module srl_nokia-platform-cpu {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:linux:platform-cpu";
+  prefix srl-plat-cpu;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-platform {
+    prefix srl-plat;
+  }
+  import srl_nokia-platform-control {
+    prefix srl-plat-ctrl;
+  }
+  import srl_nokia-platform-lc {
+    prefix srl-plat-lc;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data related to CPU
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  grouping per-type-statistics {
+    description
+      "Common grouping for percentage statistics";
+    leaf instant {
+      type srl-comm:percentage;
+      description
+        "The instantaneous percentage value";
+    }
+    leaf average-1 {
+      type srl-comm:percentage;
+      description
+        "The arithmetic mean value of this statistic over the last minute";
+    }
+    leaf average-5 {
+      type srl-comm:percentage;
+      description
+        "The arithmetic mean value of this statistic over the last five minutes";
+    }
+    leaf average-15 {
+      type srl-comm:percentage;
+      description
+        "The arithmetic mean value of this statistic over the last fifteen minutes";
+    }
+  }
+
+  grouping system-cpu-top {
+    description
+      "Operational state data for the system CPU(s)";
+    list cpu {
+      srl-exts:stream-mode "sample=5";
+      description
+        "List of all CPUs in the system";
+      config false;
+      key "index";
+      leaf index {
+        type union {
+          type enumeration {
+            enum all {
+              description
+                "Index value indicating all CPUs in the system";
+            }
+          }
+          type uint64;
+        }
+        description
+          "CPU index for each processor core on the system
+
+           On a single-core system, the index should be zero.  The 'all' index signifies an aggregation of the CPU utilization statistics over all cores in the system.";
+      }
+      leaf architecture {
+        type enumeration {
+          enum x86_64;
+          enum aarch64;
+        }
+        description
+          "Architecture supported by the CPU";
+      }
+      leaf type {
+        type string;
+        description
+          "Model name of the CPU";
+      }
+      leaf speed {
+        description
+          "Capable speed of the CPU";
+        type decimal64 {
+          fraction-digits 2;
+        }
+        units "gigahertz";
+      }
+      container total {
+        description
+          "Enter the total context
+
+           Total CPU utilization";
+        uses per-type-statistics;
+      }
+      container user {
+        description
+          "Enter the user context
+
+           Time spent executing at the user level
+
+           This can otherwise be known as application or user space time.";
+        uses per-type-statistics;
+      }
+      container system {
+        description
+          "Enter the system context
+
+           Time spent executing at the system level
+
+           This can otherwise be known as kernel time, and does not include time spent servicing hardware and software interrupts.";
+        uses per-type-statistics;
+      }
+      container nice {
+        description
+          "Enter the nice context
+
+           Time spent running low-priority (niced) user processes";
+        uses per-type-statistics;
+      }
+      container idle {
+        description
+          "Enter the idle context
+
+           Time spent idle";
+        uses per-type-statistics;
+      }
+      container iowait {
+        description
+          "Enter the iowait context
+
+           Time spent idle, waiting for an outstanding disk I/O request";
+        uses per-type-statistics;
+      }
+      container hardware-interrupt {
+        description
+          "Enter the hardware-interrupt context
+
+           Time spent servicing hardware interrupts";
+        uses per-type-statistics;
+      }
+      container software-interrupt {
+        description
+          "Enter the software-interrupt context
+
+           Time spent servicing software interrupts";
+        uses per-type-statistics;
+      }
+    }
+  }
+
+  grouping system-procmon-top {
+    description
+      "Top level grouping for attributes for processes";
+    list process {
+      srl-exts:stream-mode "sample=5";
+      key "pid";
+      config false;
+      description
+        "List of system processes";
+      leaf pid {
+        type uint64;
+        description
+          "The process ID";
+      }
+      leaf name {
+        type string;
+        description
+          "The process name";
+      }
+      leaf-list args {
+        type string;
+        description
+          "Current process command line arguments
+           Arguments with a parameter (e.g., --option 10  or -option=10) should be represented as a single element of the list with the argument name and parameter together.  Flag arguments, i.e., those without a parameter should also be in their own list element.";
+      }
+      leaf start-time {
+        type srl-comm:date-and-time-delta;
+        description
+          "The time at which this process started";
+      }
+      leaf cpu-utilization {
+        type srl-comm:percentage;
+        description
+          "The percentage of CPU that is being used by the process";
+      }
+      leaf memory-usage {
+        type uint64;
+        units "bytes";
+        description
+          "Bytes allocated and in use by the process";
+      }
+      leaf memory-utilization {
+        type srl-comm:percentage;
+        description
+          "The percentage of RAM that is being used by the process";
+      }
+    }
+  }
+
+  grouping cpu-state-top {
+    description
+      "Grouping for CPU state";
+    uses system-cpu-top;
+    uses system-procmon-top;
+  }
+
+  grouping cpu-top {
+    description
+      "Grouping for CPU configuration and state";
+    uses cpu-state-top;
+  }
+
+  augment "/srl-plat:platform/srl-plat-ctrl:control" {
+    uses cpu-top;
+  }
+
+  augment "/srl-plat:platform/srl-plat-lc:linecard" {
+    if-feature "srl-feat:chassis";
+    uses system-cpu-top;
+  }
+}

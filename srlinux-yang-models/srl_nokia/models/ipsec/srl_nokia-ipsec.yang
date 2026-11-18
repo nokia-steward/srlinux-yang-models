@@ -1,0 +1,264 @@
+module srl_nokia-ipsec {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:ipsec:ipsec";
+  prefix srl-ipse;
+
+  import srl_nokia-ipsec-types {
+    prefix srl-ipse-type;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines IPsec configuration and state
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping ipsec-group-top {
+    list ipsec-group {
+      description
+        "List of IPsec groups";
+      key "name";
+      leaf name {
+        description
+          "Name of the IPsec group";
+        type srl-comm:name;
+      }
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "Administrative state of the IPsec group";
+      }
+      list member {
+        description
+          "Member interface of the IPsec group";
+        key "interface";
+        max-elements 256;
+        min-elements 1;
+        leaf interface {
+          description
+            "Reference to a physical ethernet port, breakout port, or LAG interface.
+             An interface cannot be a member of more than one IPsec group.";
+          type leafref {
+            path "/srl-ifs:interface/srl-ifs:name";
+          }
+          must "starts-with(., 'ethernet') or starts-with(., 'lag')" {
+            error-message "Only 'ethernet' or 'lag' interfaces are allowed.";
+          }
+          must 'not(/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:ethernet/srl-ifs:aggregate-id)' {
+            error-message "LAG member ports cannot be configured directly; add the LAG interface instead";
+          }
+          must 'not(/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:breakout-mode)' {
+            error-message "IPsec group members cannot have breakout-mode enabled; add the breakout ports instead";
+          }
+        }
+        leaf oper-state {
+          config false;
+          type leafref {
+            path "/srl-ifs:interface/srl-ifs:oper-state";
+          }
+          description
+            "Operational state of the member interface";
+        }
+      }
+    }
+  }
+
+  grouping ike-transform-top {
+    list ike-transform {
+      description
+        "Transform for IKE SA";
+      key "name";
+      leaf name {
+        description
+          "Name of the IKE transform";
+        type srl-comm:name;
+      }
+      leaf encryption {
+        description
+          "Encryption algorithm";
+        type identityref {
+          base srl-ipse-type:ike-sa-encryption-algorithms;
+        }
+        default "srl-ipse-type:aes128-gcm16";
+      }
+      leaf integrity {
+        type identityref {
+          base srl-ipse-type:ike-sa-integrity-algorithms;
+        }
+        must ". != 'srl-ipse-type:auth-encryption' or ../encryption = 'srl-ipse-type:aes128-gcm8' or ../encryption = 'srl-ipse-type:aes128-gcm16' or ../encryption = 'srl-ipse-type:aes256-gcm8' or ../encryption = 'srl-ipse-type:aes256-gcm16'" {
+          error-message "'auth-encryption' integrity can only be used when encryption is an AEAD algorithm";
+        }
+        must ". = 'srl-ipse-type:auth-encryption' or (../encryption != 'srl-ipse-type:aes128-gcm8' and ../encryption != 'srl-ipse-type:aes128-gcm16' and ../encryption != 'srl-ipse-type:aes256-gcm8' and ../encryption != 'srl-ipse-type:aes256-gcm16')" {
+          error-message "'auth-encryption' integrity must be used when encryption is an AEAD algorithm";
+        }
+        default "srl-ipse-type:auth-encryption";
+        description
+          "Integrity algorithm";
+      }
+      leaf prf {
+        type identityref {
+          base srl-ipse-type:prf-algorithms;
+        }
+        must ". != 'srl-ipse-type:same-as-auth' or (../encryption != 'srl-ipse-type:aes128-gcm8' and ../encryption != 'srl-ipse-type:aes128-gcm16' and ../encryption != 'srl-ipse-type:aes256-gcm8' and ../encryption != 'srl-ipse-type:aes256-gcm16')" {
+          error-message "prf 'same-as-auth' cannot be used when encryption is an AEAD algorithm";
+        }
+        default "srl-ipse-type:sha-256";
+        description
+          "Pseudorandom function algorithm";
+      }
+      leaf key-exchange-group {
+        description
+          "Key exchange group";
+        type identityref {
+          base srl-ipse-type:key-exchange-algorithms;
+        }
+        default "srl-ipse-type:group-14";
+      }
+      leaf lifetime {
+        description
+          "IKE SA lifetime";
+        type srl-ipse-type:lifetime;
+        default "86400";
+      }
+    }
+  }
+
+  grouping child-transform-top {
+    list child-transform {
+      description
+        "Transform for CHILD SA";
+      key "name";
+      leaf name {
+        description
+          "Name of the child transform";
+        type srl-comm:name;
+      }
+      leaf encryption {
+        description
+          "Encryption algorithm";
+        type identityref {
+          base srl-ipse-type:child-sa-encryption-algorithms;
+        }
+        default "srl-ipse-type:aes128-gcm16";
+      }
+      leaf integrity {
+        type identityref {
+          base srl-ipse-type:child-sa-integrity-algorithms;
+        }
+        must ". != 'srl-ipse-type:auth-encryption' or ../encryption = 'srl-ipse-type:aes128-gcm8' or ../encryption = 'srl-ipse-type:aes128-gcm16' or ../encryption = 'srl-ipse-type:aes256-gcm8' or ../encryption = 'srl-ipse-type:aes256-gcm16'" {
+          error-message "'auth-encryption' integrity can only be used when encryption is an AEAD algorithm";
+        }
+        must ". = 'srl-ipse-type:auth-encryption' or (../encryption != 'srl-ipse-type:aes128-gcm8' and ../encryption != 'srl-ipse-type:aes128-gcm16' and ../encryption != 'srl-ipse-type:aes256-gcm8' and ../encryption != 'srl-ipse-type:aes256-gcm16')" {
+          error-message "'auth-encryption' integrity must be used when encryption is an AEAD algorithm";
+        }
+        default "srl-ipse-type:auth-encryption";
+        description
+          "Integrity algorithm";
+      }
+      leaf pfs {
+        description
+          "Perfect forward secrecy key exchange group";
+        type identityref {
+          base srl-ipse-type:key-exchange-algorithms;
+        }
+      }
+      leaf lifetime {
+        description
+          "CHILD SA lifetime";
+        type srl-ipse-type:lifetime;
+        default "3600";
+      }
+    }
+  }
+
+  grouping ipsec-profile-top {
+    list ipsec-profile {
+      description
+        "List of IPsec profiles";
+      key "name";
+      leaf name {
+        description
+          "Name of the IPsec profile";
+        type srl-comm:name;
+      }
+      leaf-list ike-transforms {
+        min-elements 1;
+        max-elements 8;
+        type leafref {
+          path "/srl-ipse:ipsec/srl-ipse:ike-transform/srl-ipse:name";
+        }
+        description
+          "Ordered list of IKE transforms";
+      }
+      leaf-list child-transforms {
+        min-elements 1;
+        max-elements 8;
+        type leafref {
+          path "/srl-ipse:ipsec/srl-ipse:child-transform/srl-ipse:name";
+        }
+        description
+          "Ordered list of child transforms";
+      }
+      container dpd {
+        presence "Enable dead peer detection";
+        description
+          "Dead peer detection parameters";
+        leaf hold-time {
+          type uint16 {
+            range "10..3600";
+          }
+          default "10";
+          units "seconds";
+          description
+            "Dead peer detection hold time";
+        }
+        leaf retry {
+          default "3";
+          type uint16 {
+            range "1..16";
+          }
+          description
+            "Number of dead peer detection retries";
+        }
+      }
+    }
+  }
+
+  grouping ipsec-top {
+    description
+      "Top-level configuration and state for IPsec";
+    container ipsec {
+      if-feature "srl-feat:ipsec-inline-fastpath";
+      description
+        "Enter the ipsec context
+
+         Enclosing container for IPsec";
+      uses ipsec-group-top;
+      uses ike-transform-top;
+      uses child-transform-top;
+      uses ipsec-profile-top;
+    }
+  }
+
+  uses ipsec-top;
+}

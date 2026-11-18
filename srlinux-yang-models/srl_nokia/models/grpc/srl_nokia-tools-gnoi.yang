@@ -1,0 +1,59 @@
+module srl_nokia-tools-gnoi {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:grpc:tools-gnoi";
+  prefix srl-tool-gnoi;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-gnoi-containerz {
+    prefix srl-tool-gnoi-cont;
+  }
+  import srl_nokia-tools-gnoi-healthz {
+    prefix srl-tool-gnoi-heal;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for managing gNOI
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+
+  grouping tools-gnoi-top {
+    container gnoi {
+      presence "Configure tools gNOI";
+      description
+        "Top-level container for operational commands related to gNOI";
+      uses srl-tool-gnoi-cont:tools-gnoi-containerz-top {
+        if-feature "srl-feat:containerz-tools-command";
+      }
+      uses srl-tool-gnoi-heal:tools-gnoi-healthz-top;
+    }
+  }
+}

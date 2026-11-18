@@ -1,0 +1,31 @@
+module srl_nokia-tools-system {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:general:tools-system";
+  prefix srl-tool-sys;
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational commands on system.
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  container system {
+    presence "Configure tools system";
+    description
+      "Enclosing container for system management.";
+  }
+}

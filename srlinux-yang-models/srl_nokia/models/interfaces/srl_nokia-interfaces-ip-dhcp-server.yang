@@ -1,0 +1,107 @@
+module srl_nokia-interfaces-ip-dhcp-server {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:dhcp:interfaces-ip-dhcp-server";
+  prefix srl-ifs-ip-dhcp-serv;
+
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-interfaces-ip-dhcp-relay {
+    prefix srl-ifs-ip-dhcp-rela;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model to enable DHCP server on IP and IRB subinterfaces
+
+     Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+  revision 2021-06-30 {
+    description
+      "SR Linux 21.6.1";
+  }
+
+  grouping dhcp-common {
+    leaf oper-state {
+      config false;
+      type srl-comm:oper-state;
+      srl-exts:show-importance "high";
+      description
+        "Details if the dhcp server is operationally available";
+    }
+  }
+
+  grouping subinterface-dhcpv4-server {
+    container dhcp-server {
+      presence "perform dhcp server related functions under subinterface";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        srl-exts:show-importance "high";
+        default "disable";
+        must "not(((../../srl-ifs-ip-dhcp-rela:dhcp-relay/srl-ifs-ip-dhcp-rela:admin-state = 'enable') and (. = 'enable')) or starts-with(../../../../srl-ifs:name, 'mgmt'))" {
+          error-message "can't enable both dhcp server and dhcp relay on the same subinterface or enable dhcp server on the mgmt interface";
+        }
+        description
+          "Enables/Disables DHCP server function on subinterface";
+      }
+      uses dhcp-common;
+    }
+  }
+
+  grouping subinterface-dhcpv6-server {
+    container dhcpv6-server {
+      presence "perform dhcpv6 server related functions under subinterface";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        srl-exts:show-importance "high";
+        default "disable";
+        must "not(((../../srl-ifs-ip-dhcp-rela:dhcp-relay/srl-ifs-ip-dhcp-rela:admin-state = 'enable') and (. = 'enable')) or starts-with(../../../../srl-ifs:name, 'mgmt'))" {
+          error-message "can't enable both dhcp server and dhcp relay on the same subinterface or enable dhcp server on the mgmt interface";
+        }
+        description
+          "Enables/Disables DHCPv6 server function on subinterface";
+      }
+      uses dhcp-common;
+    }
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:ipv4" {
+    if-feature "srl-feat:dhcp-server";
+    uses subinterface-dhcpv4-server;
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:ipv6" {
+    if-feature "srl-feat:dhcp-server";
+    uses subinterface-dhcpv6-server;
+  }
+}

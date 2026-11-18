@@ -1,0 +1,225 @@
+module srl_nokia-tools-bgp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:bgp:tools-bgp";
+  prefix srl-tool-bgp;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for BGP operational commands
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  typedef autonomous-system-number {
+    type uint32 {
+      range "1..4294967295";
+    }
+  }
+
+  grouping bgp-tools-top {
+    container bgp {
+      presence "Enable the BGP protocol";
+      container reset-peer {
+        presence "Hard reset peers";
+        leaf peer-as {
+          type autonomous-system-number;
+          description
+            "Hard reset only BGP peers that have the specified peer-AS number, whether they are configured peers or dynamic peers";
+        }
+      }
+      container soft-clear {
+        presence "Soft reset peers by sending them ROUTE_REFRESH messages";
+        leaf route-refresh {
+          type identityref {
+            base srl-comm:bgp-address-family;
+          }
+          description
+            "The address family to refresh
+
+             This is encoded in the ROUTE_REFRESH message. By default all families are refreshed.";
+        }
+        leaf peer-as {
+          type autonomous-system-number;
+          description
+            "Soft reset only BGP peers that have the specified peer-AS number, whether they are configured peers or dynamic peers";
+        }
+      }
+      container route-flap-damping {
+        if-feature "srl-feat:bgp-route-flap-damping";
+        presence "Clear the route-flap-damping state for the bgp-instance";
+        leaf clear-history {
+          type empty;
+          description
+            "Clear the route-flap-damping data for all routes of the BGP instance
+
+              This also has the effect of unsuppressing routes that were previously suppressed";
+        }
+      }
+      container clear-malformed-updates {
+        if-feature "srl-feat:bgp-malformed-route-retention";
+        presence "Clear retained malformed treat-as-withdraw BGP UPDATE entries";
+      }
+      container bmp {
+        if-feature "srl-feat:bgp-bmp";
+        container reset {
+          presence "Reset all BMP station sessions in the network-instance";
+        }
+        list station {
+          key "name";
+          leaf name {
+            type srl-comm:name;
+            description
+              "The configured name of the BMP station, or 'all' to reset every BMP station session in the network-instance";
+          }
+          container reset {
+            presence "Reset the BMP station session";
+          }
+          container debug {
+            presence "Enable/disable debugging for the BMP station session";
+            leaf events {
+              type empty;
+              description
+                "Log BMP session state-machine and connection events";
+            }
+            leaf messages {
+              type empty;
+              description
+                "Log BMP messages (packets) sent to the collector";
+            }
+          }
+        }
+        description
+          "Enter the bmp context";
+      }
+      list group {
+        key "group-name";
+        leaf group-name {
+          type srl-comm:name;
+          description
+            "The configured name of the peer group";
+        }
+        container reset-peer {
+          presence "Hard reset group peers";
+          leaf peer-as {
+            type autonomous-system-number;
+            description
+              "Hard reset only BGP peers in the peer-group that have the specified peer-AS number, whether they are configured peers or dynamic peers";
+          }
+        }
+        container soft-clear {
+          presence "Soft reset group peers by sending them ROUTE_REFRESH messages";
+          leaf route-refresh {
+            type identityref {
+              base srl-comm:bgp-address-family;
+            }
+            description
+              "The address family to refresh
+
+               This is encoded in the ROUTE_REFRESH message. By default all families are refreshed.";
+          }
+          leaf peer-as {
+            type autonomous-system-number;
+            description
+              "Soft reset only BGP peers in the peer-group that have the specified peer-AS number, whether they are configured peers or dynamic peers";
+          }
+        }
+        container route-flap-damping {
+          if-feature "srl-feat:bgp-route-flap-damping";
+          presence "Clear the route-flap-damping state for the peer group";
+          leaf clear-history {
+            type empty;
+            description
+              "Clear the route-flap-damping data for all routes received from group peers
+
+               This also has the effect of unsuppressing routes that were previously suppressed";
+          }
+        }
+        container clear-malformed-updates {
+          if-feature "srl-feat:bgp-malformed-route-retention";
+          presence "Clear retained malformed treat-as-withdraw BGP UPDATE entries";
+        }
+      }
+      list neighbor {
+        key "peer-address";
+        leaf peer-address {
+          type srl-comm:ip-address-with-zone;
+          description
+            "The transport address of the BGP peer
+
+             The peer-address must be a valid IPv4 unicast address or a valid IPv6 global unicast address. Sessions to a link-local IPv6 address are not supported.";
+        }
+        leaf reset-peer {
+          type empty;
+          description
+            "Hard reset the peer";
+        }
+        container soft-clear {
+          presence "Soft reset the peer by sending it ROUTE_REFRESH messages";
+          leaf route-refresh {
+            type identityref {
+              base srl-comm:bgp-address-family;
+            }
+            description
+              "The address family to refresh
+
+               This is encoded in the ROUTE_REFRESH message. By default all families are refreshed.";
+          }
+        }
+        container route-flap-damping {
+          if-feature "srl-feat:bgp-route-flap-damping";
+          presence "Clear the route-flap-damping state for the peer";
+          leaf clear-history {
+            type empty;
+            description
+              "Clear the route-flap-damping data for all routes received from the single peer
+
+               This also has the effect of unsuppressing routes that were previously suppressed";
+          }
+        }
+        container clear-malformed-updates {
+          if-feature "srl-feat:bgp-malformed-route-retention";
+          presence "Clear retained malformed treat-as-withdraw BGP UPDATE entries";
+        }
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:protocols" {
+    uses bgp-tools-top;
+  }
+}

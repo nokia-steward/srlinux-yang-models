@@ -1,0 +1,716 @@
+module srl_nokia-tls {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:linux:tls";
+  prefix srl-tls;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines TLS configuration
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2024-10-31 {
+    description
+      "SR Linux 24.10.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  identity cipher-type {
+    description
+      "Base identity for cipher types";
+  }
+
+  identity ecdhe-rsa-aes256-gcm-sha384 {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-aes256-gcm-sha384 {
+    base cipher-type;
+  }
+
+  identity ecdhe-rsa-aes256-sha384 {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-aes256-sha384 {
+    base cipher-type;
+  }
+
+  identity ecdhe-rsa-aes256-sha {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-aes256-sha {
+    base cipher-type;
+  }
+
+  identity dhe-dss-aes256-gcm-sha384 {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-aes256-gcm-sha384 {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-aes256-sha256 {
+    base cipher-type;
+  }
+
+  identity dhe-dss-aes256-sha256 {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-aes256-sha {
+    base cipher-type;
+  }
+
+  identity dhe-dss-aes256-sha {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-camellia256-sha {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base cipher-type;
+  }
+
+  identity dhe-dss-camellia256-sha {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base cipher-type;
+  }
+
+  identity aes256-gcm-sha384 {
+    base cipher-type;
+  }
+
+  identity aes256-sha256 {
+    base cipher-type;
+  }
+
+  identity aes256-sha {
+    base cipher-type;
+  }
+
+  identity camellia256-sha {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base cipher-type;
+  }
+
+  identity psk-aes256-cbc-sha {
+    base cipher-type;
+  }
+
+  identity ecdhe-rsa-aes128-gcm-sha256 {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-aes128-gcm-sha256 {
+    base cipher-type;
+  }
+
+  identity ecdhe-rsa-aes128-sha256 {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-aes128-sha256 {
+    base cipher-type;
+  }
+
+  identity ecdhe-rsa-aes128-sha {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-aes128-sha {
+    base cipher-type;
+  }
+
+  identity dhe-dss-aes128-gcm-sha256 {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-aes128-gcm-sha256 {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-aes128-sha256 {
+    base cipher-type;
+  }
+
+  identity dhe-dss-aes128-sha256 {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-aes128-sha {
+    base cipher-type;
+  }
+
+  identity dhe-dss-aes128-sha {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-seed-sha {
+    base cipher-type;
+  }
+
+  identity dhe-dss-seed-sha {
+    base cipher-type;
+  }
+
+  identity dhe-rsa-camellia128-sha {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base cipher-type;
+  }
+
+  identity dhe-dss-camellia128-sha {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base cipher-type;
+  }
+
+  identity aes128-gcm-sha256 {
+    base cipher-type;
+  }
+
+  identity aes128-sha256 {
+    base cipher-type;
+  }
+
+  identity aes128-sha {
+    base cipher-type;
+  }
+
+  identity seed-sha {
+    base cipher-type;
+  }
+
+  identity camellia128-sha {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base cipher-type;
+  }
+
+  identity psk-aes128-cbc-sha {
+    base cipher-type;
+  }
+
+  identity ecdhe-rsa-des-cbc3-sha {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-des-cbc3-sha {
+    base cipher-type;
+  }
+
+  identity edh-rsa-des-cbc3-sha {
+    base cipher-type;
+  }
+
+  identity edh-dss-des-cbc3-sha {
+    base cipher-type;
+  }
+
+  identity des-cbc3-sha {
+    base cipher-type;
+  }
+
+  identity idea-cbc-sha {
+    base cipher-type;
+  }
+
+  identity psk-3des-ede-cbc-sha {
+    base cipher-type;
+  }
+
+  identity ecdhe-rsa-rc4-sha {
+    base cipher-type;
+  }
+
+  identity ecdhe-ecdsa-rc4-sha {
+    base cipher-type;
+  }
+
+  identity rc4-sha {
+    base cipher-type;
+  }
+
+  identity psk-rc4-sha {
+    base cipher-type;
+  }
+
+  identity tls13-cipher-type {
+    description
+      "Base identity for tls 1.3 cipher types";
+  }
+
+  identity tls_aes_128_gcm_sha256 {
+    base tls13-cipher-type;
+  }
+
+  identity tls_aes_256_gcm_sha384 {
+    base tls13-cipher-type;
+  }
+
+  identity tls_chacha20_poly1305_sha256 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-cipher-type;
+  }
+
+  identity tls13-group-type {
+    description
+      "Base identity for group types";
+  }
+
+  identity secp256r1 {
+    base tls13-group-type;
+  }
+
+  identity secp384r1 {
+    base tls13-group-type;
+  }
+
+  identity secp521r1 {
+    base tls13-group-type;
+  }
+
+  identity x25519 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-group-type;
+  }
+
+  identity x448 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-group-type;
+  }
+
+  identity brainpoolP256r1tls13 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-group-type;
+  }
+
+  identity brainpoolP384r1tls13 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-group-type;
+  }
+
+  identity brainpoolP512r1tls13 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-group-type;
+  }
+
+  identity ffdhe2048 {
+    base tls13-group-type;
+  }
+
+  identity ffdhe3072 {
+    base tls13-group-type;
+  }
+
+  identity ffdhe4096 {
+    base tls13-group-type;
+  }
+
+  identity ffdhe6144 {
+    base tls13-group-type;
+  }
+
+  identity ffdhe8192 {
+    base tls13-group-type;
+  }
+
+  identity MLKEM512 {
+    base tls13-group-type;
+  }
+
+  identity MLKEM768 {
+    base tls13-group-type;
+  }
+
+  identity MLKEM1024 {
+    base tls13-group-type;
+  }
+
+  identity SecP256r1MLKEM768 {
+    base tls13-group-type;
+  }
+
+  identity X25519MLKEM768 {
+    base tls13-group-type;
+  }
+
+  identity SecP384r1MLKEM1024 {
+    base tls13-group-type;
+  }
+
+  identity tls13-signature-type {
+    description
+      "Base identity for signature types";
+  }
+
+  identity ecdsa_secp256r1_sha256 {
+    base tls13-signature-type;
+  }
+
+  identity ecdsa_secp384r1_sha384 {
+    base tls13-signature-type;
+  }
+
+  identity ecdsa_secp521r1_sha512 {
+    base tls13-signature-type;
+  }
+
+  identity ed25519 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-signature-type;
+  }
+
+  identity ed448 {
+    if-feature "not (srl-feat:system-fips-mode)";
+    base tls13-signature-type;
+  }
+
+  identity ecdsa_brainpoolP256r1tls13_sha256 {
+    base tls13-signature-type;
+  }
+
+  identity ecdsa_brainpoolP384r1tls13_sha384 {
+    base tls13-signature-type;
+  }
+
+  identity ecdsa_brainpoolP512r1tls13_sha512 {
+    base tls13-signature-type;
+  }
+
+  identity rsa_pss_rsae_sha256 {
+    base tls13-signature-type;
+  }
+
+  identity rsa_pss_rsae_sha384 {
+    base tls13-signature-type;
+  }
+
+  identity rsa_pss_rsae_sha512 {
+    base tls13-signature-type;
+  }
+
+  identity rsa_pss_pss_sha256 {
+    base tls13-signature-type;
+  }
+
+  identity rsa_pss_pss_sha384 {
+    base tls13-signature-type;
+  }
+
+  identity rsa_pss_pss_sha512 {
+    base tls13-signature-type;
+  }
+
+  identity mldsa44 {
+    base tls13-signature-type;
+  }
+
+  identity mldsa65 {
+    base tls13-signature-type;
+  }
+
+  identity mldsa87 {
+    base tls13-signature-type;
+  }
+
+  identity tls-version-type {
+    description
+      "Base identity for TLS protocol versions";
+  }
+
+  identity tls1.2 {
+    base tls-version-type;
+    description
+      "TLS protocol version 1.2";
+  }
+
+  identity tls1.3 {
+    base tls-version-type;
+    description
+      "TLS protocol version 1.3";
+  }
+
+  grouping profile-interface {
+    list profile {
+      description
+        "List of configured TLS profiles";
+      key "name";
+      leaf name {
+        srl-exts:show-importance "high";
+        type srl-comm:name {
+          length "1..220";
+        }
+        description
+          "Name of the TLS profile";
+      }
+      leaf key {
+        srl-exts:show-importance "low";
+        type string {
+          length "0..10240";
+          srl-exts:generated-class-name "SecretKey";
+        }
+        description
+          "Base64 encoded key to use with the certificate
+
+           This includes the '-----BEGIN PRIVATE KEY-----', and '-----END PRIVATE KEY-----' header and footer.
+           The value is hashed, and only the hashed value is kept.";
+      }
+      leaf certificate {
+        srl-exts:show-importance "low";
+        type string {
+          length "0..102400";
+        }
+        description
+          "Base64 encoded certificate to use with the private key
+
+           This includes the '-----BEGIN CERTIFICATE-----' and '-----END CERTIFICATE-----' header and footer.
+           Can contain a certificate chain containing multiple certificates separated by '-----BEGIN CERTIFICATE-----'
+           and '-----END CERTIFICATE-----' headers and footers. Must start with the client certificate.";
+      }
+      leaf use-tpm-devid {
+        if-feature "srl-feat:tpm-idevid";
+        type enumeration {
+          enum idevid {
+            value 1;
+            description
+              "The TPM iDevID key and certificate is used";
+          }
+          enum oidevid {
+            if-feature "srl-feat:tpm-oidevid";
+            value 2;
+            description
+              "The TPM iDevID key and oIDevID certificate is used";
+          }
+        }
+        must 'not (../key or ../certificate)' {
+          error-message "The TLS profile can only be configured with idevid or oidevid if the local key and certificate are not configured";
+        }
+        description
+          "Defines if the TLS profile key and certificate uses the TPM idevid or oidevid";
+      }
+      leaf authenticate-client {
+        default "false";
+        srl-exts:show-importance "high";
+        type boolean;
+        description
+          "Defines if the server should authenticate the identity of connecting clients using the trust anchor
+
+           This is only applicable when the TLS profile is a server.  Client services will ignore this setting.";
+      }
+      leaf trust-anchor {
+        type string {
+          length "0..5242880";
+        }
+        srl-exts:show-importance "low";
+        description
+          "Base64 encoded certificate to use as a trust anchor
+
+           This includes the '-----BEGIN CERTIFICATE-----' and '-----END CERTIFICATE-----' header and footer.
+           Can contain multiple trust anchors separated by '-----BEGIN CERTIFICATE-----' and '-----END CERTIFICATE-----'
+           headers and footers.";
+      }
+      leaf certificate-revocation-list {
+        type string {
+          length "0..5242880";
+        }
+        srl-exts:show-importance "low";
+        description
+          "Base64 encoded certificate revocation list
+
+           This includes the '-----BEGIN X509 CRL' and '-----END X509 CRL' header and footer.
+           Can contain multiple crls separated by '-----BEGIN X509 CRL' and '-----END X509 CRL' headers and footers.
+           If empty, then no CRL verification is performed.";
+      }
+      leaf relaxed-crl-verification {
+        type boolean;
+        srl-exts:show-importance "low";
+        default "false";
+        description
+          "Defines if the CRL verification is done in a relaxed (non-strict) way.
+
+           If set to true, the CRL verification allows nonexistent and/or expired CRLs in the client certificate chain.
+           If set to false, the CRL verification will fail if any CRL in the client certificate chain is not found or
+           expired.";
+      }
+      leaf-list cipher-list {
+        ordered-by user;
+        srl-exts:show-importance "low";
+        type identityref {
+          base cipher-type;
+        }
+        default "ecdhe-ecdsa-aes256-gcm-sha384";
+        default "ecdhe-ecdsa-aes128-gcm-sha256";
+        default "ecdhe-rsa-aes256-gcm-sha384";
+        default "ecdhe-rsa-aes128-gcm-sha256";
+        description
+          "List of ciphers to use when negotiating TLS 1.2 with clients";
+      }
+      leaf-list tls-version {
+        if-feature "srl-feat:pqc-support-tls-crypt-functions";
+        ordered-by user;
+        srl-exts:show-importance "low";
+        type identityref {
+          base tls-version-type;
+        }
+        default "tls1.2";
+        default "tls1.3";
+        description
+          "List of TLS protocol versions to allow when negotiating with clients
+
+           When not configured, both TLS 1.2 and TLS 1.3 are allowed.";
+      }
+      container tls13 {
+        if-feature "srl-feat:pqc-support-tls-crypt-functions";
+        description
+          "Enter the tls13 context
+
+           TLS 1.3 cryptographic parameters";
+        leaf-list cipher-list {
+          ordered-by user;
+          srl-exts:show-importance "low";
+          type identityref {
+            base tls13-cipher-type;
+          }
+          description
+            "List of ciphers to use when negotiating TLS 1.3 with clients
+
+             When not configured, tls_aes_128_gcm_sha256, tls_aes_256_gcm_sha384 and
+             tls_chacha20_poly1305_sha256 are used. The tls_chacha20_poly1305_sha256 cipher suite
+             is not available when the system is booted in fips-140 mode as it is not a fips approved
+             algorithm and is then also left out of the default";
+        }
+        leaf-list group-list {
+          ordered-by user;
+          srl-exts:show-importance "low";
+          type identityref {
+            base tls13-group-type;
+          }
+          description
+            "List of groups to use when negotiating TLS 1.3 with clients
+
+             When not configured, secp256r1, secp384r1, secp521r1, x25519, x448, brainpoolP256r1tls13,
+             brainpoolP384r1tls13, brainpoolP512r1tls13, ffdhe2048, ffdhe3072, ffdhe4096, ffdhe6144,
+             ffdhe8192, MLKEM512, MLKEM768, MLKEM1024, SecP256r1MLKEM768, X25519MLKEM768 and
+             SecP384r1MLKEM1024 are used. The x25519, x448 and brainpool groups are not available when
+             the system is booted in fips-140 mode as they are not fips approved algorithms and are
+             then also left out of the default";
+        }
+        leaf-list signature-list {
+          ordered-by user;
+          srl-exts:show-importance "low";
+          type identityref {
+            base tls13-signature-type;
+          }
+          description
+            "List of signature-algorithms to use when negotiating TLS 1.3 with clients
+
+             When not configured, ecdsa_secp256r1_sha256, ecdsa_secp384r1_sha384, ecdsa_secp521r1_sha512,
+             ed25519, ed448, ecdsa_brainpoolP256r1tls13_sha256, ecdsa_brainpoolP384r1tls13_sha384,
+             ecdsa_brainpoolP512r1tls13_sha512, rsa_pss_rsae_sha256, rsa_pss_rsae_sha384,
+             rsa_pss_rsae_sha512, rsa_pss_pss_sha256, rsa_pss_pss_sha384, rsa_pss_pss_sha512, mldsa44,
+             mldsa65 and mldsa87 are used. The ed25519 and ed448 signature algorithms are not available
+             when the system is booted in fips-140 mode as they are not fips approved algorithms and are
+             then also left out of the default";
+        }
+      }
+      leaf dynamic {
+        config false;
+        srl-exts:show-importance "high";
+        type boolean;
+        description
+          "Defines if the profile was dynamically created by service (for example gNSI Authz/Certz)";
+      }
+      leaf valid-after {
+        if-feature "srl-feat:tls-cert-expiry";
+        config false;
+        type srl-comm:date-and-time;
+        description
+          "Date and time the certificate becomes valid";
+      }
+      leaf expiration {
+        if-feature "srl-feat:tls-cert-expiry";
+        config false;
+        type srl-comm:date-and-time;
+        description
+          "Date and time the certificate expires";
+      }
+      leaf expired {
+        if-feature "srl-feat:tls-cert-expiry";
+        config false;
+        type boolean;
+        description
+          "Indicates whether the certificate is expired.
+
+           The certificate is expired if current time is before valid-after time or current
+           time is after expiration time";
+      }
+    }
+  }
+
+  grouping tls-top {
+    container tls {
+      description
+        "Enter the tls context
+
+         Top-level container for TLS configuration and state";
+      uses profile-interface;
+    }
+  }
+
+  augment "/srl-sys:system" {
+    uses tls-top;
+  }
+}

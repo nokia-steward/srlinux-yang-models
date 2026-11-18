@@ -1,0 +1,37 @@
+module srl_nokia-connection-point-bridge-table-mac-learning-entries {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac-learn:connection-point-bridge-table-mac-learning-entries";
+  prefix srl-conn-poin-brid-tbl-mac-lear-entr;
+
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-interfaces-bridge-table-mac-learning-entries {
+    prefix srl-ifs-brid-tbl-mac-lear-entr;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file gives a description of mac entries learned on this connection-points bridge table.
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:connection-point/srl-netinst:bridge-table/srl-netinst:mac-learning" {
+    uses srl-ifs-brid-tbl-mac-lear-entr:delete-all-macs-action;
+    uses srl-ifs-brid-tbl-mac-lear-entr:bridge-table-mac-learning-entries-top;
+  }
+}

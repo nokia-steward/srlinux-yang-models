@@ -1,0 +1,43 @@
+module iana-srl-augments {
+
+  yang-version 1.1;
+
+  namespace "urn:nokia.com:srlinux:iana:iana-srl-augments";
+
+  prefix iana-srl-augments;
+
+  organization "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module is the placeholder for augmenting the
+     srl_nokia-extensions:telemetry-capability extension into the IANA models.
+
+     There is currently no requirement for the IANA models to be supported by
+     streaming telemetry. SR Linux imports the IANA modules only for non-schema
+     nodes (typedefs and identities: iana-crypt-hash, iana-if-type and
+     iana-timezones), none of which contribute schema (data) nodes to the tree.
+     Tagging is not required for non-schema nodes, so there is nothing to augment
+     and this module is intentionally a no-op at the time of writing.
+
+     When an IANA model that contributes schema (data) nodes is added, augment
+     srl_nokia-extensions:telemetry-capability \"unsupported\" at the root of that
+     model here, following the same pattern as ietf-srl-augments. For example:
+
+       import srl_nokia-extensions {
+         prefix srl_nokia-extensions;
+       }
+       import iana-example {
+         prefix iana-example;
+       }
+
+       augment \"/iana-example:some-root\" {
+         srl_nokia-extensions:telemetry-capability \"unsupported\";
+       }";
+
+  revision 2026-07-31 {
+    description
+      "SRLinux 26.7.1";
+  }
+}

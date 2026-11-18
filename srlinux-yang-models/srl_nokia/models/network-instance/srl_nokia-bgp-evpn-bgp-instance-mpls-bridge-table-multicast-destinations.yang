@@ -1,0 +1,132 @@
+module srl_nokia-bgp-evpn-bgp-instance-mpls-bridge-table-multicast-destinations {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mcid:bgp-evpn-bgp-instance-mpls-bridge-table-multicast-destinations";
+  prefix srl-bgp-evpn-bgp-inst-mpls-brid-tbl-mult-dest;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-bgp-evpn {
+    prefix srl-bgp-evpn;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for bridge-table multicast destinations on the bgp-evpn mpls instance
+
+     Copyright 2022-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2023-07-31 {
+    description
+      "SR Linux 23.7.1";
+  }
+  revision 2022-06-30 {
+    description
+      "SR Linux 22.6.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+
+  grouping evpn-mpls-bridge-table-multicast-destinations-destination-top {
+    list destination {
+      key "tep evi-label tunnel-id";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP).";
+      }
+      leaf evi-label {
+        type srl-comm:mpls-label-non-reserved;
+        srl-exts:show-importance "high";
+        description
+          "EVI label of the destination.";
+      }
+      leaf tunnel-id {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "tunnel identitier of the destination.";
+      }
+      leaf multicast-forwarding {
+        srl-exts:show-importance "high";
+        type srl-comm:multicast-type;
+        description
+          "The type of multicast data forwarded by this evpn-mpls destination.";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-mpls destination object (system allocated).";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+          enum multicast-limit;
+        }
+        description
+          "The reason why the destination is not programmed in the floodlist";
+      }
+    }
+  }
+
+  grouping evpn-mpls-bridge-table-multicast-destinations-limits-top {
+    container multicast-limit {
+      description
+        "Enter the multicast-limit context
+
+         Multicast limits per vxlan interface.";
+      leaf maximum-entries {
+        type int32;
+        description
+          "Maximum number of multicast vxlan-destinations allowed on a bgp-evpn mpls instance.";
+      }
+      leaf current-usage {
+        type int32;
+        description
+          "Maximum number of multicast vxlan-destinations in use on this bgp-evpn mpls instance.";
+      }
+    }
+  }
+
+  grouping evpn-mpls-bridge-table-multicast-destinations-top {
+    container multicast-destinations {
+      config false;
+      uses evpn-mpls-bridge-table-multicast-destinations-limits-top;
+      uses evpn-mpls-bridge-table-multicast-destinations-destination-top;
+      description
+        "Enter the multicast-destinations context";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-netinst:bgp-evpn/srl-bgp-evpn:bgp-instance/srl-bgp-evpn:mpls/srl-bgp-evpn:bridge-table" {
+    uses evpn-mpls-bridge-table-multicast-destinations-top;
+  }
+}

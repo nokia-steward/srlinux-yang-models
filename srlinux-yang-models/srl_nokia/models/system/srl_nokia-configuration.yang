@@ -1,0 +1,787 @@
+module srl_nokia-configuration {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:general:configuration";
+  prefix srl-conf;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-gnsi-pathz {
+    prefix srl-gnsi-path;
+  }
+  import srl_nokia-grpc-gnoi-bootconfig {
+    prefix srl-grpc-gnoi-boot;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data related to the system configuration.
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  typedef commit-status {
+    type enumeration {
+      enum validating;
+      enum publishing;
+      enum unconfirmed;
+      enum checkpoint;
+      enum save;
+      enum complete;
+      enum reverting;
+      enum failed;
+    }
+  }
+
+  typedef candidate-type {
+    type enumeration {
+      enum shared;
+      enum private;
+    }
+  }
+
+  grouping configuration-state-commits-top {
+    description
+      "State data related to configuration transactions";
+    list commit {
+      config false;
+      description
+        "List of configuration transactions";
+      key "id";
+      leaf id {
+        type uint32;
+        description
+          "System identifier for the commit";
+      }
+      leaf type {
+        type candidate-type;
+        srl-exts:show-importance "high";
+        description
+          "Type of configuration candidate the commit was triggered from";
+      }
+      leaf name {
+        type srl-comm:name;
+        srl-exts:show-importance "high";
+        description
+          "Name of the configuration candidate the commit was triggered from";
+      }
+      leaf status {
+        type commit-status;
+        srl-exts:show-importance "high";
+        description
+          "Current status of the commit";
+      }
+      leaf comment {
+        type string;
+        srl-exts:show-importance "high";
+        description
+          "Operator provided comment associated with this commit";
+      }
+      leaf username {
+        type srl-comm:username;
+        srl-exts:show-importance "high";
+        description
+          "User that started the commit";
+      }
+      leaf started {
+        type srl-comm:date-and-time-delta;
+        srl-exts:show-importance "high";
+        description
+          "Start date and time of the commit";
+      }
+      leaf ended {
+        type srl-comm:date-and-time-delta;
+        srl-exts:show-importance "high";
+        description
+          "End date and time of the commit
+
+           This field is not populated if the commit is in progress";
+      }
+      leaf persist-id {
+        if-feature "srl-feat:netconf";
+        type string;
+        description
+          "Persistent confirmed commit identifier";
+      }
+    }
+  }
+
+  grouping configuration-state-candidates-top {
+    description
+      "State data related to configuration candidates";
+    list candidate {
+      config false;
+      description
+        "List of configuration candidates currently active";
+      key "name";
+      leaf name {
+        type srl-comm:name;
+        description
+          "Name of the configuration candidate";
+      }
+      leaf type {
+        type candidate-type;
+        srl-exts:show-importance "high";
+        description
+          "Type of configuration candidate";
+      }
+      leaf username {
+        type srl-comm:username;
+        srl-exts:show-importance "high";
+        description
+          "User that started the configuration session";
+      }
+      leaf started {
+        type srl-comm:date-and-time-delta;
+        srl-exts:show-importance "high";
+        description
+          "Start date and time of the configuration session";
+      }
+      action clear {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the clear action
+
+           Clear the candidate from the system, discarding any changes
+
+           This results in any users currently in the candidate being dropped back to running mode.";
+      }
+      action lock {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:future-0-0 and srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the lock action
+
+           Lock the candidate
+
+           Prevents modifications from other configuration sessions.";
+        srl-exts:implicit-input "session-id,username";
+      }
+      action unlock {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:future-0-0 and srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the unlock action
+
+           Unlock the candidate
+
+           Allows modifications from other configuration sessions.";
+        srl-exts:implicit-input "session-id,username";
+      }
+    }
+  }
+
+  grouping configuration-state-sessions-top {
+    description
+      "State data related to configuration sessions";
+    list session {
+      config false;
+      description
+        "List of configuration sessions currently active";
+      key "id";
+      leaf id {
+        type uint32;
+        description
+          "System generated ID for the configuration session";
+      }
+      leaf type {
+        type candidate-type;
+        srl-exts:show-importance "high";
+        description
+          "Type of configuration session";
+      }
+      leaf name {
+        type srl-comm:name;
+        srl-exts:show-importance "high";
+        description
+          "Name of the candidate the session is active on
+
+           Set to 'default' if a non-named candidate is active";
+      }
+      leaf exclusive {
+        type boolean;
+        srl-exts:show-importance "high";
+        description
+          "Details if this session is running in exclusive mode";
+      }
+      leaf username {
+        type srl-comm:username;
+        srl-exts:show-importance "high";
+        description
+          "User that started the configuration session";
+      }
+      leaf started {
+        type srl-comm:date-and-time-delta;
+        srl-exts:show-importance "high";
+        description
+          "Start date and time of the configuration session";
+      }
+      action clear {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the clear action
+
+           Clear the session from the system, discarding any changes";
+      }
+    }
+  }
+
+  grouping configuration-config-top {
+    description
+      "Configuration data related to checkpoints";
+    leaf max-checkpoints {
+      type uint8 {
+        range "1..255";
+      }
+      default "10";
+      description
+        "The number of checkpoints kept by the system";
+    }
+    leaf max-candidates {
+      srl-exts:first-released "20.6.1";
+      type uint8 {
+        range "1..255";
+      }
+      default "10";
+      description
+        "The maximum number of combined private and shared candidates";
+    }
+    leaf idle-timeout {
+      srl-exts:first-released "20.6.1";
+      type uint16;
+      default "10080";
+      units "minutes";
+      description
+        "The idle timeout of configuration candidates
+
+         After this period of no activity, the candidate is emptied and removed from the system.";
+    }
+    leaf auto-checkpoint {
+      srl-exts:first-released "20.12.1";
+      type boolean;
+      default "false";
+      description
+        "Configuration checkpoint will be automatically created after every successful commit (if set to true).";
+    }
+    leaf auto-save {
+      srl-exts:first-released "24.7.1";
+      type boolean;
+      default "false";
+      description
+        "Configuration save will be automatically done after every successful commit (if set to true).";
+    }
+    leaf max-paths-per-subscription-request {
+      type uint16 {
+        range "1..500";
+      }
+      default "36";
+      description
+        "The maximum number of paths that can be subscribed to in a single subscription request";
+    }
+    leaf strict-request-path-verification {
+      if-feature "srl-feat:strict-request-path-verification";
+      type boolean;
+      default "false";
+      description
+        "Verify access for the requested paths before processing the get/set/subscribe request";
+    }
+  }
+
+  grouping configuration-state-checkpoints-top {
+    description
+      "State data related to checkpoints";
+    list checkpoint {
+      config false;
+      description
+        "List of current checkpoints present in the system";
+      key "id";
+      leaf id {
+        type uint8;
+        description
+          "System generated ID for the checkpoint";
+      }
+      leaf name {
+        type srl-comm:checkpoint-name;
+        srl-exts:show-importance "high";
+        description
+          "User provided name of the checkpoint";
+      }
+      leaf comment {
+        type string;
+        srl-exts:show-importance "high";
+        description
+          "User provided annotations associated with the checkpoint";
+      }
+      leaf created {
+        type srl-comm:date-and-time-delta;
+        srl-exts:show-importance "high";
+        description
+          "Date and time this checkpoint was created";
+      }
+      leaf version {
+        type string;
+        description
+          "System version that the checkpoint was generated on";
+      }
+      leaf tag {
+        type string;
+        description
+          "Full system version that the checkpoint was generated on";
+      }
+      leaf username {
+        type srl-comm:username;
+        srl-exts:show-importance "high";
+        description
+          "Username that created this checkpoint";
+      }
+      leaf size {
+        type uint64;
+        description
+          "Size of the checkpoint configuration file";
+        units "bytes";
+      }
+    }
+  }
+
+  grouping configuration-checkpoint-id-input {
+    description
+      "Identifies a checkpoint by system generated ID or user provided name";
+    choice checkpoint {
+      mandatory true;
+      description
+        "System generated ID, or user provided name of the checkpoint";
+      case id {
+        leaf id {
+          type uint8;
+          description
+            "System generated ID for the checkpoint";
+        }
+      }
+      case name {
+        leaf name {
+          type srl-comm:checkpoint-name;
+          description
+            "User provided name of the checkpoint";
+        }
+      }
+    }
+  }
+
+  grouping configuration-top {
+    container configuration {
+      description
+        "Enter the configuration context
+
+         Top-level container for configuration and state data related to the system configuration";
+      leaf last-change {
+        config false;
+        type srl-comm:date-and-time-delta;
+        description
+          "Date and time of the last successful commit
+
+           Set to the time the configuration was loaded by management server, so is refreshed at boot time.";
+      }
+      uses configuration-config-top;
+      uses configuration-state-checkpoints-top;
+      uses configuration-state-sessions-top;
+      uses configuration-state-candidates-top;
+      uses configuration-state-commits-top;
+      uses srl-gnsi-path:pathz-top {
+        if-feature "srl-feat:gnsi-pathz";
+      }
+      action save {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the save action
+
+           Save current running configuration as initial (startup) configuration - config.json";
+        output {
+          leaf saved-filename {
+            type string;
+            description
+              "Filesystem path of the saved initial (startup) configuration";
+          }
+        }
+      }
+      action rescue-save {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the rescue-save action
+
+           Save current running configuration as rescue configuration - rescue-config.json";
+        output {
+          leaf saved-filename {
+            type string;
+            description
+              "Filesystem path of the saved rescue configuration";
+          }
+        }
+      }
+      action rescue-clear {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the rescue-clear action
+
+           Remove rescue configuration";
+        output {
+          leaf path {
+            type string;
+            description
+              "Filesystem path of the cleared rescue configuration";
+          }
+        }
+      }
+      action lock {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:future-0-0 and srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the lock action
+
+           Lock the running configuration
+
+           Prevents commits from other configuration sessions.";
+        srl-exts:implicit-input "session-id,username";
+      }
+      action unlock {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:future-0-0 and srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the unlock action
+
+           Unlock the running configuration
+
+           Allows commits from other configuration sessions.";
+        srl-exts:implicit-input "session-id,username";
+      }
+      action generate-checkpoint {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the generate-checkpoint action
+
+           Generate a checkpoint point based on the current running configuration";
+        input {
+          leaf name {
+            type srl-comm:checkpoint-name;
+            description
+              "User provided name of the checkpoint";
+          }
+          leaf comment {
+            type string;
+            description
+              "User provided comment to associate with the checkpoint";
+          }
+        }
+        output {
+          leaf path {
+            type string;
+            description
+              "Filesystem path of the generated checkpoint";
+          }
+        }
+      }
+      action clear-checkpoint {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the clear-checkpoint action
+
+           Clear the checkpoint from the system";
+        input {
+          uses configuration-checkpoint-id-input;
+        }
+        output {
+          leaf name {
+            type string;
+            description
+              "Resolved name of the cleared checkpoint (e.g. 'startup', 'rescue', or user-provided name)";
+          }
+          leaf path {
+            type string;
+            description
+              "Filesystem path of the cleared checkpoint";
+          }
+        }
+      }
+      action load-checkpoint {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the load-checkpoint action
+
+           Load candidate from saved checkpoint configuration";
+        input {
+          uses configuration-checkpoint-id-input;
+        }
+        srl-exts:implicit-input "session-id,candidate-name";
+        output {
+          leaf name {
+            type string;
+            description
+              "Resolved name of the loaded checkpoint (e.g. 'startup', 'rescue', or user-provided name)";
+          }
+          leaf path {
+            type string;
+            description
+              "Filesystem path of the loaded checkpoint";
+          }
+          leaf-list transformation-output {
+            type string;
+            description
+              "Per-line messages produced by configuration transformation, when the checkpoint was migrated to the current version";
+          }
+        }
+      }
+      action revert-checkpoint {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the revert-checkpoint action
+
+           Revert running system configuration to the saved checkpoint configuration
+
+           This functions as a load and commit action.";
+        input {
+          uses configuration-checkpoint-id-input;
+          leaf force {
+            type boolean;
+            default "false";
+            description
+              "Revert inside a separate private candidate, allowing the revert to run without
+               a pre-existing configuration session";
+          }
+        }
+        srl-exts:implicit-input "session-id,candidate-name,username";
+        output {
+          leaf name {
+            type string;
+            description
+              "Name recorded in the checkpoint being reverted to";
+          }
+          leaf comment {
+            type string;
+            description
+              "Comment recorded in the checkpoint being reverted to";
+          }
+        }
+      }
+      action upgrade {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+        description
+          "Execute the upgrade action
+
+           Operational commands related to configuration upgrade";
+        input {
+          leaf checkpoint {
+            type union {
+              type uint8;
+              type srl-comm:checkpoint-name;
+            }
+            description
+              "System generated ID, or operator defined name for the checkpoint";
+          }
+          leaf file {
+            type string;
+            description
+              "System file path to a json configuration file";
+          }
+          leaf startup {
+            type empty;
+            description
+              "Startup (initial) configuration";
+          }
+          leaf rescue {
+            type empty;
+            description
+              "Rescue configuration";
+          }
+          leaf validation-check {
+            type enumeration {
+              enum skip {
+                description
+                  "Skip validation of the upgraded content";
+              }
+              enum merge {
+                description
+                  "Validation is done as if the content was used in a load merge operation";
+              }
+              enum replace {
+                description
+                  "Validation is done as if the content was used in a full config replace operation";
+              }
+            }
+            default "replace";
+            description
+              "Specifies the kind of validation that will be executed after the content is upgraded
+
+               If the validation fails the upgraded content will not be persisted.";
+          }
+        }
+        srl-exts:implicit-input "username";
+        output {
+          leaf transformation-needed {
+            type boolean;
+            description
+              "Indicates whether a configuration transformation was needed and applied to migrate the content to the current version";
+          }
+          leaf transformed-to-version {
+            type string;
+            description
+              "Current SRLinux version that the content was upgraded to";
+          }
+          leaf-list transformation-output {
+            type string;
+            description
+              "Messages produced by the configuration transformation step (informational and warning messages)";
+          }
+        }
+      }
+      container pathz-policy {
+        if-feature "srl-feat:gnsi-pathz";
+        srl-exts:first-released "24.7.1";
+        config false;
+        presence "Operational commands relating to Pathz gRPC policies";
+        description
+          "Top-level container for operational commands relating to Pathz gRPC policies";
+        action clear {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+          description
+            "Execute the clear action
+
+             Clear Pathz authorization policy counters";
+          output {
+            leaf version {
+              type string;
+              description
+                "Version of the Pathz authorization policy whose counters were cleared";
+            }
+            leaf created-on {
+              type srl-comm:date-and-time-delta;
+              description
+                "Creation time of the Pathz authorization policy whose counters were cleared";
+            }
+          }
+        }
+        action remove {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-common";
+          description
+            "Execute the remove action
+
+             Remove Pathz authorization policy from the system";
+          output {
+            leaf version {
+              type string;
+              description
+                "Version of the Pathz authorization policy that was removed";
+            }
+            leaf created-on {
+              type srl-comm:date-and-time-delta;
+              description
+                "Creation time of the Pathz authorization policy that was removed";
+            }
+          }
+        }
+      }
+      action confirmed-accept {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-same-io";
+        description
+          "Execute the confirmed-accept action
+
+           Accepts an in progress commit and stops the confirmation timer";
+        input {
+          leaf persist-id {
+            type string;
+            description
+              "Specifies the persist-id to which the commit confirmed accept applies";
+          }
+        }
+      }
+      action confirmed-reject {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-same-io";
+        description
+          "Execute the confirmed-reject action
+
+           Rejects an in progress commit and stops the confirmation timer";
+        input {
+          leaf persist-id {
+            type string;
+            description
+              "Specifies the persist-id to which the commit confirmed reject applies";
+          }
+        }
+      }
+      uses srl-grpc-gnoi-boot:gnoi-bootconfig-top {
+        if-feature "srl-feat:gnoi-bootconfig";
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    srl-exts:first-released "19.11.1";
+    uses configuration-top;
+  }
+}

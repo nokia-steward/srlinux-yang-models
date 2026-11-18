@@ -1,0 +1,1598 @@
+module srl_nokia-rsvp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mpls:rsvp";
+  prefix srl-rsvp;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-mpls-label-management {
+    prefix srl-mpls-labe-mgmt;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-rsvp-types {
+    prefix srl-rsvp-type;
+  }
+  import srl_nokia-mpls-rsvp-common {
+    prefix srl-mpls-rsvp-comm;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This YANG module defines the configuration and state components for the management of the Resource reSerVation Protocol (RSVP).
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+
+  grouping dump-rsvp-rsb {
+    action dump-rsb {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-rsb action
+
+         Dump the RSVP reservation state blocks";
+      input {
+        leaf destination {
+          type srl-comm:ipv4-address-unicast;
+          description
+            "The IP address of the RSVP endpoint.";
+        }
+        leaf source {
+          type srl-comm:ipv4-address-unicast;
+          description
+            "The IP address of the RSVP source.";
+        }
+        leaf tunnel-id {
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "The tunnel ID of the RSVP session.";
+        }
+        leaf lsp-id {
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "The LSP ID of the RSVP session.";
+        }
+        leaf detail {
+          type empty;
+          description
+            "If set, the RSVP reservation state blocks will be dumped in detail.";
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping dump-rsvp-neighbor {
+    action dump-neighbor {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-neighbor action
+
+         Dump the RSVP neighbors";
+      input {
+        leaf detail {
+          type empty;
+          description
+            "If set, the RSVP neighbor will be dumped in detail.";
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping dump-rsvp-psb {
+    action dump-psb {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the dump-psb action
+
+         Dump the RSVP path state block";
+      input {
+        leaf destination {
+          type srl-comm:ipv4-address-unicast;
+          description
+            "The IP address of the RSVP endpoint";
+        }
+        leaf source {
+          type srl-comm:ipv4-address-unicast;
+          description
+            "The IP address of the RSVP source.";
+        }
+        leaf tunnel-id {
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "The tunnel ID of the RSVP path state block.";
+        }
+        leaf lsp-id {
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "The LSP ID of the RSVP path state block.";
+        }
+        leaf detail {
+          type empty;
+          description
+            "If set, the RSVP path state block will be dumped in detail.";
+        }
+        leaf status {
+          type enumeration {
+            enum up {
+              value 1;
+              description
+                "The RSVP path state block is up.";
+            }
+            enum down {
+              value 2;
+              description
+                "The RSVP path state block is down.";
+            }
+          }
+          description
+            "If set, only path state blocks in the given status will be dumped.";
+        }
+      }
+      output {
+        uses srl-comm:srl-unstructured-output;
+      }
+    }
+  }
+
+  grouping clear-rsvp-interface-attributes {
+    action clear {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the clear action
+
+         When invoked without input, bounce admin state for all RSVP interfaces.
+
+         When invoked with the statistics input leaf, clear counters and statistics
+         for all RSVP interfaces.";
+      input {
+        leaf statistics {
+          type empty;
+          description
+            "Clear RSVP interface statistics
+
+             Clears counters and statistics for all RSVP interfaces.";
+        }
+      }
+    }
+  }
+
+  grouping clear-rsvp-interface-admin {
+    action clear {
+      srl-exts:telemetry-capability "unsupported";
+      description
+        "Execute the clear action
+
+         Bounce admin state for this RSVP interface.";
+    }
+  }
+
+  grouping rsvp-interface-global-clear-commands {
+    description
+      "Clear commands applicable across all RSVP interfaces";
+    uses clear-rsvp-interface-attributes;
+  }
+
+  grouping rsvp-interface-clear-commands {
+    description
+      "Clear commands applicable at the individual RSVP interface level";
+    uses clear-rsvp-interface-admin;
+  }
+
+  grouping rsvp-global-protocol-statistics {
+    description
+      "RSVP protocol statistics which may not apply
+       on an interface, but are significant globally.";
+    leaf path-timeouts {
+      config false;
+      type srl-comm:zero-based-counter32;
+      description
+        "The number of Path State Blocks (PSBs) that
+         have been timed out by the local system.";
+    }
+    leaf reservation-timeouts {
+      config false;
+      type srl-comm:zero-based-counter32;
+      description
+        "The number of Reservation State Blocks (RSBs) that
+         have been timed out by the local system.";
+    }
+  }
+
+  grouping rsvp-statistics {
+    description
+      "RSVP protocol statistics and message counters";
+    leaf in-path-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Path messages";
+    }
+    leaf in-path-error-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Path Error messages";
+    }
+    leaf in-path-tear-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Path Tear messages";
+    }
+    leaf in-reservation-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Resv messages";
+    }
+    leaf in-reservation-error-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Resv Error messages";
+    }
+    leaf in-reservation-tear-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Resv Tear messages";
+    }
+    leaf in-hello-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Hello messages";
+    }
+    leaf in-srefresh-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Summary Refresh messages";
+    }
+    leaf in-ack-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Ack messages";
+    }
+    leaf out-path-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Path messages";
+    }
+    leaf out-path-error-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Path Error messages";
+    }
+    leaf out-path-tear-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Path Tear messages";
+    }
+    leaf out-reservation-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Resv messages";
+    }
+    leaf out-reservation-error-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Resv Error messages";
+    }
+    leaf out-reservation-tear-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Resv Tear messages";
+    }
+    leaf out-hello-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Hello messages";
+    }
+    leaf out-srefresh-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Summary Refresh messages";
+    }
+    leaf out-ack-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of sent RSVP Ack messages";
+    }
+  }
+
+  grouping additional-per-interface-statistics {
+    description
+      "Additional per-interface statistics for RSVP";
+    leaf in-bundle-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP Bundle messages";
+    }
+    leaf in-total-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Total number of received RSVP messages";
+    }
+    leaf in-bad-packets {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of received RSVP messages with errors";
+    }
+    leaf out-total-messages {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Total number of sent RSVP messages.";
+    }
+    leaf hello-timeouts {
+      config false;
+      type srl-comm:zero-based-counter32;
+      description
+        "Number of times Hello timed out";
+    }
+  }
+
+  grouping rsvp-graceful-restart-helper-state {
+    description
+      "Operational state for RSVP graceful restart helper";
+    leaf gr-helper-state {
+      type enumeration {
+        enum none {
+          value 0;
+        }
+        enum restart-in-progress {
+          value 1;
+        }
+        enum recovery-in-progress {
+          value 2;
+        }
+        enum cleanup {
+          value 3;
+        }
+      }
+      description
+        "Graceful restart helper state after loss of communication with the RSVP neighbor.";
+    }
+    leaf gr-helper-timer-expiry {
+      type srl-comm:date-and-time-delta;
+      description
+        "Time when the graceful restart or recovery timer will expire.";
+    }
+    leaf remote-gr-capability {
+      type boolean;
+      description
+        "RSVP neighbor graceful restart capability.";
+    }
+    leaf remote-graceful-restart-time {
+      type uint32;
+      units "milliseconds";
+      description
+        "Graceful restart time advertised by the RSVP neighbor.";
+    }
+    leaf remote-graceful-recovery-time {
+      type uint32;
+      units "milliseconds";
+      description
+        "Graceful restart recovery time advertised by the RSVP neighbor.";
+    }
+  }
+
+  grouping rsvp-neighbor-oper-state {
+    description
+      "Operational state for an RSVP neighbor";
+    leaf hello-state {
+      type srl-comm:oper-state;
+      description
+        "Operational state of Hello messages from this RSVP neighbor.";
+    }
+    leaf last-oper-change {
+      type srl-comm:date-and-time-delta;
+      description
+        "Time when the operational state of Hello messages from this RSVP
+         neighbor last changed.";
+    }
+    leaf refresh-reduction-properties {
+      type bits {
+        bit local-refresh-reduction {
+          position 0;
+          description
+            "Refresh reduction configured locally for this neighbor.";
+        }
+        bit local-reliable-delivery {
+          position 1;
+          description
+            "Reliable delivery configured locally for this neighbor.";
+        }
+        bit remote-refresh-reduction {
+          position 2;
+          description
+            "Refresh reduction supported on the remote end.";
+        }
+        bit remote-message-id {
+          position 3;
+          description
+            "Message ID object supported on the remote end.";
+        }
+      }
+      description
+        "The value of flags indicates the set of properties for this RSVP neighbor.";
+    }
+    leaf source-instance {
+      type srl-comm:hex-number;
+      description
+        "Source instance for this neighbor.";
+    }
+    leaf dst-instance {
+      type srl-comm:hex-number;
+      description
+        "Destination instance for this neighbor.";
+    }
+    leaf next-hello-refresh {
+      type srl-comm:date-and-time-delta;
+      description
+        "Time when the next Hello message will be sent to this RSVP neighbor.";
+    }
+    leaf hello-timeout {
+      type srl-comm:date-and-time-delta;
+      description
+        "Time when Hello message state from this RSVP neighbor will timeout if
+         Hello is not received.";
+    }
+    leaf next-srefresh {
+      type srl-comm:date-and-time-delta;
+      description
+        "Time when next Srefresh message will be sent to this RSVP neighbor.";
+    }
+    leaf epoch-num-received {
+      type uint32;
+      description
+        "Indicates the epoch number received from the neighbor.";
+    }
+    leaf max-msg-id-received {
+      type uint32;
+      description
+        "Indicates the highest message ID received from neighbor.";
+    }
+    container counters {
+      description
+        "Enter the counters context";
+      leaf hello-timeout-count {
+        type srl-comm:zero-based-counter32;
+        description
+          "The number of times the hello timeout timer expired for the neighbor.";
+      }
+      leaf hello-instance-mismatch-count {
+        type srl-comm:zero-based-counter32;
+        description
+          "Number of times the source and destination instances received in
+           a Hello message did not match the destination and source instance
+           for this neighbor.";
+      }
+      leaf out-of-order-msg-count {
+        type srl-comm:zero-based-counter32;
+        description
+          "Number of out of order messages received from the neighbor.";
+      }
+      leaf retransmitted-msg-count {
+        type srl-comm:zero-based-counter32;
+        description
+          "Number of times messages have been retransmitted to the neighbor
+            because the neighbor did not acknowledge that it received the message.";
+      }
+      action clear {
+        srl-exts:telemetry-capability "unsupported";
+        description
+          "Execute the clear action
+
+           Clears counters for this RSVP neighbor.";
+      }
+    }
+  }
+
+  grouping rsvp-neighbor-state {
+    leaf neighbor-count {
+      config false;
+      type srl-comm:gauge32;
+      description
+        "The number of neighbors on this interface.";
+    }
+    list neighbor {
+      config false;
+      key "ip-address";
+      description
+        "Enter the list of RSVP neighbors";
+      leaf ip-address {
+        type srl-comm:ip-address;
+        description
+          "The IP address of the RSVP neighbor.";
+      }
+      uses rsvp-neighbor-oper-state;
+      uses dump-rsvp-neighbor;
+    }
+  }
+
+  grouping rsvp-session-statistics {
+    leaf in-path-messages {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of RSVP Path messages received for this RSVP session.";
+    }
+    leaf out-path-messages {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of RSVP Path messages transmitted for this RSVP session.";
+    }
+    leaf in-reservation-messages {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of RSVP Resv messages received for this RSVP session.";
+    }
+    leaf out-reservation-messages {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of RSVP Resv messages transmitted for this RSVP session.";
+    }
+    leaf in-path-srefresh {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of times Path for this RSVP session was refreshed using
+         message ID from full Path refresh message or from Srefresh message.";
+    }
+    leaf out-path-srefresh {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of times Path refresh for this RSVP session was sent as a
+         part of RSVP Srefresh message.";
+    }
+    leaf in-resv-srefresh {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of times Resv for this RSVP session was refreshed using
+         message ID from full Resv refresh message or from Srefresh message.";
+    }
+    leaf out-resv-srefresh {
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of times Resv refresh for this RSVP session was sent as a
+         part of RSVP Srefresh message.";
+    }
+  }
+
+  grouping rsvp-session-state {
+    list session {
+      config false;
+      key "session-index";
+      description
+        "Enter the session list instance";
+      leaf session-index {
+        type uint32;
+        description
+          "Unique index that identifies this RSVP session.";
+      }
+      leaf tunnel-id {
+        type uint16 {
+          range "1..65535";
+        }
+        description
+          "Tunnel ID for this RSVP session.";
+      }
+      leaf lsp-id {
+        type uint16 {
+          range "1..65535";
+        }
+        description
+          "LSP ID for this RSVP session.";
+      }
+      leaf source-address {
+        type srl-comm:ip-address;
+        description
+          "IP address of the ingress node for this RSVP session.";
+      }
+      leaf destination-address {
+        type srl-comm:ip-address;
+        description
+          "IP address of the egress node for this RSVP session.";
+      }
+      leaf extended-tunnel-id {
+        type srl-comm:ip-address;
+        description
+          "Extended Tunnel ID for this RSVP session.";
+      }
+      leaf session-name {
+        type string {
+          length "1..160";
+        }
+        description
+          "The signaled name of this RSVP session.";
+      }
+      leaf session-type {
+        type enumeration {
+          enum unknown {
+            value 1;
+          }
+          enum p2p-ingress {
+            value 2;
+            description
+              "P2P ingress session type.";
+          }
+          enum p2p-transit {
+            value 3;
+            description
+              "P2P transit session type.";
+          }
+          enum p2p-egress {
+            value 4;
+            description
+              "P2P egress session type.";
+          }
+          enum p2p-bypass-ingress {
+            value 8;
+            description
+              "P2P bypass ingress session type.";
+          }
+        }
+        description
+          "Type of RSVP session, indicating this node's position in the path of the RSVP session.";
+      }
+      leaf in-interface {
+        type leafref {
+          path "../../../interface-attributes/interface/interface-name";
+        }
+        description
+          "Incoming RSVP interface for this RSVP session.";
+      }
+      leaf out-interface {
+        type leafref {
+          path "../../../interface-attributes/interface/interface-name";
+        }
+        description
+          "Outgoing RSVP interface for this RSVP session";
+      }
+      leaf in-label {
+        type uint32;
+        description
+          "Incoming label for this RSVP session.";
+      }
+      leaf out-label {
+        type uint32;
+        description
+          "Outgoing label for this RSVP session.";
+      }
+      leaf resv-style {
+        type enumeration {
+          enum unknown {
+            value 1;
+            description
+              "Unknown reservation style.";
+          }
+          enum se {
+            value 2;
+            description
+              "Shared Explicit reservation style.";
+          }
+          enum ff {
+            value 3;
+            description
+              "Fixed Filter reservation style.";
+          }
+        }
+        description
+          "Reservation style for this RSVP session.";
+      }
+      leaf previous-hop {
+        type srl-comm:ip-address;
+        description
+          "IP address of the previous hop that sent the Path message
+           for this RSVP session.";
+      }
+      leaf next-hop {
+        type srl-comm:ip-address;
+        description
+          "IP address of the next hop for this RSVP session.";
+      }
+      container recorded-hop-list {
+        config false;
+        description
+          "Enter the recorded-hop-list context
+
+           Recorded hop list for this RSVP session.";
+        list hop {
+          key "hop-index";
+          uses srl-mpls-rsvp-comm:computed-or-recorded-hop-key;
+          uses srl-mpls-rsvp-comm:recorded-hop-state;
+        }
+      }
+      container computed-hop-list {
+        config false;
+        description
+          "Enter the computed-hop-list context
+
+           Computed hop list for this RSVP session.";
+        list hop {
+          key "hop-index";
+          uses srl-mpls-rsvp-comm:computed-or-recorded-hop-key;
+          uses srl-mpls-rsvp-comm:computed-hop-state;
+        }
+      }
+      leaf setup-priority {
+        type uint32 {
+          range "0..7";
+        }
+        description
+          "Setup priority for this RSVP session.";
+      }
+      leaf hold-priority {
+        type uint32 {
+          range "0..7";
+        }
+        description
+          "Hold priority for this RSVP session.";
+      }
+      leaf session-attribute-flags {
+        config false;
+        description
+          "Session attribute object flags for this RSVP session.";
+        type bits {
+          bit local-protection-desired {
+            position 0;
+            description
+              "Local protection desired.";
+          }
+          bit label-recording-desired {
+            position 1;
+            description
+              "Label recording desired.";
+          }
+          bit se-style-desired {
+            position 2;
+            description
+              "SE style desired.";
+          }
+          bit bandwidth-protection-desired {
+            position 3;
+            description
+              "Bandwidth protection desired.";
+          }
+          bit node-protection-desired {
+            position 4;
+            description
+              "Node protection desired.";
+          }
+          bit soft-preemption-desired {
+            position 6;
+            description
+              "Soft preemption desired.";
+          }
+        }
+      }
+      leaf lsp-attribute-flags {
+        config false;
+        description
+          "LSP attribute object flags for this RSVP session.";
+        type bits {
+          bit reserved0 {
+            position 0;
+            description
+              "Reserved.";
+          }
+          bit reserved1 {
+            position 1;
+            description
+              "Reserved.";
+          }
+          bit reserved2 {
+            position 2;
+            description
+              "Reserved.";
+          }
+          bit reserved3 {
+            position 3;
+            description
+              "Reserved.";
+          }
+          bit reserved4 {
+            position 4;
+            description
+              "Reserved.";
+          }
+          bit reserved5 {
+            position 5;
+            description
+              "Reserved.";
+          }
+          bit reserved6 {
+            position 6;
+            description
+              "Reserved.";
+          }
+          bit reserved7 {
+            position 7;
+            description
+              "Reserved.";
+          }
+          bit reserved8 {
+            position 8;
+            description
+              "Reserved.";
+          }
+          bit elc {
+            position 9;
+            description
+              "Entropy label capable.";
+          }
+        }
+      }
+      container frr-protection {
+        description
+          "Enter the frr-protection context
+
+           Fast-reroute protection for this RSVP session.";
+        leaf protection-type {
+          type enumeration {
+            enum none {
+              value 0;
+              description
+                "No FRR protection available.";
+            }
+            enum facility {
+              value 2;
+              description
+                "Protected by facility bypass tunnel.";
+            }
+          }
+          description
+            "Type of FRR protection available for this RSVP session.";
+        }
+        leaf in-use {
+          type boolean;
+          description
+            "Fast-reroute protection mechanisms are in use to maintain this RSVP session.";
+        }
+        leaf properties {
+          type bits {
+            bit srlg-not-strict {
+              position 0;
+              description
+                "SRLG not strict.";
+            }
+            bit srlg-disjoint {
+              position 1;
+              description
+                "SRLG disjoint.";
+            }
+          }
+          description
+            "Properties of the fast-reroute protection provided to this RSVP session.";
+        }
+        leaf bypass-session-index {
+          type uint32;
+          description
+            "Index of the bypass tunnel that provides fast-reroute
+              protection for this RSVP session.";
+        }
+        leaf bypass-tunnel-name {
+          type string {
+            length "1..160";
+          }
+          description
+            "Name of the bypass tunnel that provides fast-reroute
+              protection for this RSVP session.";
+        }
+        leaf merge-point-label {
+          type uint32;
+          description
+            "Ingress label of this RSVP session at the merge-point for the bypass tunnel.";
+        }
+      }
+      container bypass-tunnel-info {
+        description
+          "Enter the bypass-tunnel-info context
+
+           Bypass tunnel information";
+        leaf in-use {
+          type boolean;
+          description
+            "Indicates if this bypass tunnel is actively being used to provide
+             fast-reroute protection to other RSVP tunnels.";
+        }
+        leaf avoid-node-or-link-address {
+          type srl-comm:ip-address;
+          description
+            "Router ID of the immediate downstream node or IP address of
+             the outgoing link that the PLR is trying to avoid.";
+        }
+        leaf inter-area {
+          type boolean;
+          description
+            "Bypass tunnel is inter-area.";
+        }
+        leaf path-cost {
+          type uint32;
+          description
+            "Total path cost for this bypass tunnel.";
+        }
+        leaf up-time {
+          type srl-comm:date-and-time-delta;
+          description
+            "Time when this bypass tunnel came up.";
+        }
+        leaf in-use-time {
+          type srl-comm:date-and-time-delta;
+          description
+            "Time when this bypass tunnel started to be actively used to provide
+             fast-reroute protection for other RSVP tunnels.";
+        }
+        leaf protected-lsp-count {
+          type srl-comm:gauge32;
+          description
+            "Number of LSPs protected by this bypass tunnel.";
+        }
+        leaf last-reoptimization-attempt-time {
+          type srl-comm:date-and-time-delta;
+          description
+            "Time of the last reoptimization attempt for this bypass tunnel.";
+        }
+        leaf last-reoptimization-attempt-reason {
+          type enumeration {
+            enum none {
+              value 0;
+              description
+                "No reoptimization attempt has been made.";
+            }
+            enum timer-expiry {
+              value 1;
+              description
+                "Reoptimization attempt due to reoptimization timer expiry.";
+            }
+            enum manual-reoptimization {
+              value 2;
+              description
+                "Manual reoptimization attempt.";
+            }
+          }
+          description
+            "Reason for the last reoptimization attempt for this bypass tunnel.";
+        }
+        leaf last-reoptimization-status {
+          type enumeration {
+            enum none {
+              value 0;
+              description
+                "Reoptimization timer has not expired since bypass came up.";
+            }
+            enum not-attempted {
+              value 1;
+              description
+                "Timer expired but reoptimization not attempted.";
+            }
+            enum failed {
+              value 2;
+              description
+                "Reoptimization attempt failed.";
+            }
+            enum successful {
+              value 3;
+              description
+                "Reoptimization attempt successful.";
+            }
+          }
+          description
+            "Status of the last reoptimization attempt for this bypass tunnel.";
+        }
+        leaf last-reoptimization-reason {
+          type enumeration {
+            enum none {
+              value 0;
+              description
+                "None.";
+            }
+            enum path-optimal {
+              value 1;
+              description
+                "Path optimal.";
+            }
+            enum no-eligible-plrs {
+              value 2;
+              description
+                "None of the PLRs associated with the bypass are eligible for reoptimization.";
+            }
+            enum node-protect-retry-in-progress {
+              value 3;
+              description
+                "Node protection retry in progress.";
+            }
+            enum reoptimization-in-progress {
+              value 4;
+              description
+                "Reoptimization in progress.";
+            }
+            enum node-protect-retry-bypass {
+              value 5;
+              description
+                "Node protection retry bypass.";
+            }
+            enum Reoptimization-bypass {
+              value 6;
+              description
+                "Reoptimization bypass.";
+            }
+            enum cspf-failed {
+              value 7;
+              description
+                "CSPF failed.";
+            }
+            enum setup-failed {
+              value 8;
+              description
+                "Setup failed.";
+            }
+          }
+          description
+            "Reason why the last reoptimization for this bypass tunnel was not
+             attempted or was attempted but failed.";
+        }
+      }
+      container statistics {
+        description
+          "Enter the statistics context";
+        uses rsvp-session-statistics;
+        action clear {
+          srl-exts:telemetry-capability "unsupported";
+          description
+            "Execute the clear action
+
+             Clears counters and statistics for this RSVP session.";
+        }
+      }
+    }
+  }
+
+  grouping rsvp-state {
+    description
+      "SR Linux RSVP base protocol state";
+    leaf dynamic-label-block-status {
+      config false;
+      if-feature "srl-feat:label-management";
+      type enumeration {
+        enum available;
+        enum unavailable;
+      }
+      description
+        "Status of the label block
+
+         The label block may show as unavailable if there is pending cleanup";
+    }
+    leaf oper-state {
+      srl-exts:show-importance "high";
+      config false;
+      type srl-comm:oper-state;
+      description
+        "The operational state of RSVP";
+    }
+    container statistics {
+      config false;
+      description
+        "Enter the statistics context
+
+         Platform wide RSVP statistics and counters";
+      uses rsvp-global-protocol-statistics;
+      action clear {
+        srl-exts:telemetry-capability "unsupported";
+        description
+          "Execute the clear action
+
+           Clear global RSVP statistics";
+      }
+    }
+    container sessions {
+      config false;
+      description
+        "Enter the sessions context
+
+         RSVP session state";
+      uses rsvp-session-state;
+    }
+  }
+
+  grouping mpls-rsvp-interface-reservations {
+    description
+      "Operational state related to interface bandwidth
+       reservations";
+    container bandwidth-reservations {
+      config false;
+      description
+        "Enter the bandwidth-reservations context";
+      list bandwidth-reservation {
+        config false;
+        key "priority";
+        description
+          "Available and reserved bandwidth by priority on
+           the interface.";
+        leaf priority {
+          type union {
+            type uint8 {
+              range "0..7";
+            }
+            type enumeration {
+              enum ALL {
+                description
+                  "The ALL keyword represents the overall
+                   state of the interface - i.e., the union
+                   of all of the priorities";
+              }
+            }
+          }
+          description
+            "RSVP priority for LSPs traversing the interface";
+        }
+        leaf available-bandwidth {
+          type srl-rsvp-type:bandwidth-kbps;
+          description
+            "Bandwidth currently available with the priority,
+             or for the entire interface when the priority is set to
+             ALL (i.e., the max reservable minus sum of all reserved bandwidths)";
+        }
+        leaf reserved-bandwidth {
+          type srl-rsvp-type:bandwidth-kbps;
+          description
+            "Bandwidth currently reserved within the priority,
+             or the sum of all priority levels when the keyword is set
+             to ALL (i.e., the sum of all reserved bandwidths)";
+        }
+      }
+    }
+  }
+
+  grouping rsvp-interface-state {
+    description
+      "SR Linux RSVP interface state";
+    leaf oper-state {
+      srl-exts:show-importance "high";
+      config false;
+      type srl-comm:oper-state;
+      description
+        "The operational state of the RSVP interface";
+    }
+    leaf max-link-bandwidth {
+      config false;
+      type srl-rsvp-type:bandwidth-kbps;
+      description
+        "The maximum link bandwidth expressed in kilobits per second. ";
+    }
+    leaf max-reservable-bandwidth {
+      config false;
+      type srl-rsvp-type:bandwidth-kbps;
+      description
+        "The amount of bandwidth in kilobits per second available
+          to be reserved for the RSVP protocol on this interface.";
+    }
+    leaf active-sessions {
+      config false;
+      type srl-comm:gauge32;
+      description
+        "Number of active RSVP sessions";
+    }
+    leaf total-sessions {
+      config false;
+      type srl-comm:gauge32;
+      description
+        "Total number of RSVP sessions. This includes active sessions as well
+         sessions for which Path message has been signalled but are waiting
+         for Resv message.";
+    }
+    leaf igp-update-pending {
+      config false;
+      type boolean;
+      description
+        "Bandwidth information has changed for the interface but an update
+         to IGP traffic engineering database is pending";
+    }
+    leaf next-igp-update {
+      config false;
+      type srl-comm:date-and-time-delta;
+      description
+        "Time when the interface bandwidth information will be updated to
+         IGP traffic engineering database";
+    }
+    container statistics {
+      config false;
+      description
+        "Enter the statistics context
+
+         RSVP interface statistics";
+      uses rsvp-statistics;
+      uses additional-per-interface-statistics;
+      action clear {
+        srl-exts:telemetry-capability "unsupported";
+        description
+          "Execute the clear action
+
+           Clears counters and statistics for this RSVP interface.";
+      }
+    }
+    uses mpls-rsvp-interface-reservations;
+    uses rsvp-neighbor-state;
+  }
+
+  grouping rsvp-refresh-reduction-config {
+    description
+      "Refresh reduction parameters in RSVP global configuration.";
+    container refresh-reduction {
+      description
+        "Enter the refresh-reduction context";
+      leaf rapid-retransmit-time {
+        type uint32 {
+          range "100..10000";
+        }
+        units "milliseconds";
+        default "1000";
+        must '. mod 100 = 0' {
+          error-message "rapid-retransmit-time must be a multiple of 100 milliseconds";
+        }
+        description
+          "Time to wait for a rapid retransmit of an RSVP message
+           when reliable delivery is enabled.";
+      }
+      leaf rapid-retry-limit {
+        type uint32 {
+          range "1..6";
+        }
+        default "3";
+        description
+          "Maximum number of rapid retransmits of an RSVP message when
+           reliable delivery is enabled.";
+      }
+      leaf refresh-reduction-over-bypass {
+        type boolean;
+        default "false";
+        description
+          "Refresh reduction over bypass tunnels.";
+      }
+    }
+  }
+
+  grouping rsvp-graceful-restart-config {
+    description
+      "RSVP graceful restart parameters in RSVP global configuration.";
+    leaf max-recovery {
+      type uint32 {
+        range "1..1800";
+      }
+      default "300";
+      units "seconds";
+      description
+        "The value of this object specifies the maximum time in seconds,
+         a graceful helper will wait for session recovery.";
+    }
+    leaf max-restart {
+      description
+        "The value of this object specifies the maximum time in seconds
+         a graceful helper will wait for session restart after it has
+         determined that the neighbor is down.";
+      type uint32 {
+        range "1..300";
+      }
+      default "120";
+      units "seconds";
+    }
+  }
+
+  grouping rsvp-config {
+    description
+      "SR Linux RSVP base protocol configuration.";
+    leaf admin-state {
+      type srl-comm:admin-state;
+      default "disable";
+      description
+        "Administrative state of RSVP";
+    }
+    leaf dynamic-label-block {
+      if-feature "srl-feat:label-management";
+      mandatory true;
+      type leafref {
+        path "/srl-sys:system/srl-mpls-labe-mgmt:mpls/srl-mpls-labe-mgmt:label-ranges/srl-mpls-labe-mgmt:dynamic/srl-mpls-labe-mgmt:name";
+      }
+      description
+        "Reference to a dynamic label block to use for RSVP";
+    }
+    leaf implicit-null-label {
+      type boolean;
+      default "false";
+      description
+        "Signal the implicit null option for all RSVP LSPs";
+    }
+    container fast-reroute {
+      description
+        "Enter the fast-reroute context";
+      leaf p2p-merge-point-abort-timer {
+        type uint32 {
+          range "1..65535";
+        }
+        units "seconds";
+        description
+          "Merge pointer timer for P2P paths during FRR facility protection.";
+      }
+    }
+    container soft-preemption {
+      description
+        "Enter the soft-preemption context";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "enable";
+        description
+          "Administrative state of soft preemption
+
+           Enable or disable soft preemption.";
+      }
+      leaf preemption-timeout {
+        type uint32 {
+          range "1..1800";
+        }
+        units "seconds";
+        default "300";
+        description
+          "Preemption timer for the RSVP instance";
+      }
+    }
+    container refresh-attributes {
+      description
+        "Enter the refresh-attributes context";
+      leaf keep-multiplier {
+        type uint32 {
+          range "1..255";
+        }
+        default "3";
+        description
+          "Value for the keep-multiplier to declare a reservation or neighbor as down";
+      }
+      leaf refresh-time {
+        type uint32 {
+          range "1..65535";
+        }
+        units "seconds";
+        default "30";
+        description
+          "Interval between refresh messages";
+      }
+    }
+    uses rsvp-refresh-reduction-config;
+    container traffic-engineering-thresholds {
+      description
+        "Enter the traffic-engineering-thresholds context";
+      leaf-list down-threshold {
+        type srl-rsvp-type:rsvp-te-threshold-level;
+        max-elements 16;
+        ordered-by user;
+        description
+          "Values for the down-threshold";
+      }
+      leaf-list up-threshold {
+        type srl-rsvp-type:rsvp-te-threshold-level;
+        max-elements 16;
+        ordered-by user;
+        description
+          "Values for the up-threshold";
+      }
+      leaf update-on-cac-failure {
+        type boolean;
+        default "false";
+        description
+          "CAC (Call Admission Control) failure-triggered IGP update";
+      }
+      leaf update-timer {
+        type uint32 {
+          range "1..300";
+        }
+        units "seconds";
+        description
+          "Timer-based IGP updates";
+      }
+    }
+  }
+
+  grouping rsvp-interface-config {
+    description
+      "RSVP interface configuration.";
+    leaf admin-state {
+      type srl-comm:admin-state;
+      default "disable";
+      description
+        "Administrative state of RSVP interface";
+    }
+    container interface-ref {
+      description
+        "Enter the interface-ref context
+
+         Reference to a subinterface";
+      leaf interface {
+        type leafref {
+          path "/srl-ifs:interface/srl-ifs:name";
+        }
+        description
+          "Reference to a base interface, for example a port or LAG";
+        must '../subinterface' {
+          error-message "subinterface must be configured when interface is set";
+        }
+        must "starts-with(., 'system0') or starts-with(., 'lo') or starts-with(., 'ethernet') or starts-with(., 'lag')" {
+          error-message "RSVP is only supported on System, Loopback, Ethernet and LAG subinterfaces";
+        }
+      }
+      leaf subinterface {
+        description
+          "Reference to a subinterface
+
+            This requires the base interface to be specified using the interface leaf in this container.";
+        type leafref {
+          path "/srl-ifs:interface[srl-ifs:name=current()/../interface]/srl-ifs:subinterface/srl-ifs:index";
+        }
+        must '../interface' {
+          error-message "Interface must be configured when subinterface is set";
+        }
+      }
+    }
+    leaf hello-interval {
+      type union {
+        type uint32 {
+          range "1..60";
+        }
+        type enumeration {
+          enum disable {
+            value 0;
+          }
+        }
+      }
+      units "seconds";
+      default "3";
+      description
+        "Time between RSVP Hello messages";
+    }
+    leaf subscription {
+      type uint32 {
+        range "0..1000";
+      }
+      default "100";
+      description
+        "Percentage of the link bandwidth to use for reservation";
+    }
+    leaf implicit-null-label {
+      type boolean;
+      description
+        "Signal the implicit null label value for all LSPs.
+
+          If no value is configured, the setting is inherited from the global RSVP configuration.";
+    }
+    container refresh-reduction {
+      presence "Enable refresh reduction on this interface";
+      description
+        "Enable refresh reduction on this interface.
+
+          Presence of this container enables refresh reduction. Removing the
+          container disables it.";
+      leaf reliable-delivery {
+        type boolean;
+        default "false";
+        description
+          "Use reliable delivery for RSVP messages on this interface.
+
+            Requires refresh reduction, so this leaf only has effect while the
+            enclosing refresh-reduction container is present.";
+      }
+    }
+    container traffic-engineering-thresholds {
+      description
+        "Enter the traffic-engineering-thresholds context";
+      leaf-list down-threshold {
+        type srl-rsvp-type:rsvp-te-threshold-level;
+        max-elements 16;
+        ordered-by user;
+        description
+          "Values for the te-down-threshold.
+
+            If no value is configured, the setting is inherited from the global RSVP configuration.";
+      }
+      leaf-list up-threshold {
+        type srl-rsvp-type:rsvp-te-threshold-level;
+        max-elements 16;
+        ordered-by user;
+        description
+          "Values for the te-up-threshold.
+
+            If no value is configured, the setting is inherited from the global RSVP configuration.";
+      }
+    }
+  }
+
+  grouping rsvp-top {
+    container rsvp {
+      if-feature "srl-feat:rsvp";
+      presence "Configure RSVP";
+      description
+        "Top-level configuration and operational state for Resource reSerVation Protocol (RSVP)";
+      must "current()/../../srl-netinst:type = 'srl-netinst:default'" {
+        error-message "RSVP configuration only supported with network instance type default";
+      }
+      uses rsvp-config;
+      uses rsvp-state;
+      uses dump-rsvp-rsb;
+      uses dump-rsvp-psb;
+      uses dump-rsvp-neighbor;
+      container interface-attributes {
+        description
+          "Enter the interface-attributes context";
+        uses rsvp-interface-global-clear-commands;
+        list interface {
+          description
+            "List of RSVP interfaces";
+          key "interface-name";
+          leaf interface-name {
+            type srl-netinst:network-instance-subintf-name;
+            description
+              "Name of the RSVP interface";
+          }
+          uses rsvp-interface-config;
+          uses rsvp-interface-state;
+          uses rsvp-interface-clear-commands;
+        }
+      }
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols" {
+    uses rsvp-top;
+  }
+}

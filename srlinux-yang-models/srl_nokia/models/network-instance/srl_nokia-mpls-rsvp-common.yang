@@ -1,0 +1,157 @@
+module srl_nokia-mpls-rsvp-common {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mpls:mpls-rsvp-common";
+  prefix srl-mpls-rsvp-comm;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This YANG module defines common groupings for computed and recorded hop state used by the Resource reSerVation Protocol (RSVP).
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping computed-or-recorded-hop-key {
+    leaf hop-index {
+      description
+        "Index of hop within the list.";
+      type int32;
+    }
+  }
+
+  grouping recorded-hop-state {
+    uses computed-or-recorded-hop-common-state;
+    leaf hop-type {
+      config false;
+      description
+        "Hop type.";
+      type enumeration {
+        enum ipv4 {
+          value 1;
+          description
+            "IPv4 hop type.";
+        }
+        enum unnumbered {
+          value 4;
+          description
+            "Unnumbered hop type.";
+        }
+      }
+    }
+    leaf flags {
+      config false;
+      description
+        "Flags for this hop.";
+      type bits {
+        bit local-protection-available {
+          position 0;
+          description
+            "Local protection available.";
+        }
+        bit local-protection-in-use {
+          position 1;
+          description
+            "Local protection in use.";
+        }
+        bit bandwidth-protection {
+          position 2;
+          description
+            "Bandwidth protection.";
+        }
+        bit node-protection {
+          position 3;
+          description
+            "Node protection.";
+        }
+        bit preemption-pending {
+          position 4;
+          description
+            "Preemption pending.";
+        }
+        bit node-id {
+          position 5;
+          description
+            "Node ID.";
+        }
+      }
+    }
+    leaf record-label {
+      config false;
+      description
+        "Label recorded for this hop.";
+      type uint32;
+    }
+  }
+
+  grouping computed-hop-state {
+    uses computed-or-recorded-hop-common-state;
+    leaf hop-type {
+      config false;
+      description
+        "Hop type.";
+      type enumeration {
+        enum ipv4 {
+          value 1;
+          description
+            "IPv4 hop type.";
+        }
+        enum unnumbered {
+          value 5;
+          description
+            "Unnumbered hop type.";
+        }
+      }
+    }
+    leaf-list out-interface-admin-group {
+      config false;
+      description
+        "Administrative groups on the outgoing interface for this hop.";
+      type uint32;
+    }
+    leaf abr {
+      config false;
+      description
+        "Hop is an Area Border Router (ABR).";
+      type boolean;
+    }
+  }
+
+  grouping computed-or-recorded-hop-common-state {
+    leaf ip-address {
+      config false;
+      description
+        "IP Address of the hop.";
+      type srl-comm:ip-address;
+    }
+    leaf loose {
+      config false;
+      description
+        "Hop is loose.";
+      type boolean;
+    }
+    leaf unnumbered-if-id {
+      config false;
+      description
+        "Unnumbered interface identifier of the hop.";
+      type uint32;
+    }
+    leaf router-id {
+      config false;
+      description
+        "Router ID of the hop.";
+      type srl-comm:ip-address;
+    }
+  }
+}

@@ -1,0 +1,127 @@
+module srl_nokia-if-ip-urpf {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:if-ip-urpf";
+  prefix srl-if-ip-urpf;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "YANG model for unicast RPF operations
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+
+  grouping subinterface-urpf-check {
+    container unicast-rpf-check {
+      description
+        "Enter the unicast-rpf-check context
+
+         Configuration and state related to unicast RPF lookups for source address validation";
+      leaf admin-state {
+        description
+          "Enable or disable uRPF lookup for arriving packets of this protocol
+
+           By default uRPF lookups are disabled. Changes to this leaf take effect without requiring a subinterface flap.";
+        type srl-comm:admin-state;
+        default "disable";
+        must "(. = 'disable') or starts-with(../../../../srl-ifs:name,'ethernet') or starts-with(../../../../srl-ifs:name,'lag')" {
+          error-message "Only supported on ethernet and lag subinterfaces";
+        }
+        must "(. = 'disable') or (../../../srl-ifs:type = 'routed') or not(../../../srl-ifs:type)" {
+          error-message "Only supported on routed subinterfaces";
+        }
+      }
+      leaf mode {
+        description
+          "The mode of operation for uRPF lookup
+
+           In loose mode a packet passes the reverse-path check when any eligible FIB entry matches the packet source address in the applicable lookup network-instance. Eligibility of a default-route best match is controlled by allow-default-route where that leaf is supported; where it is not supported a default-route best match never satisfies the check. By default the reverse-path lookup uses the network-instance that owns the ingress subinterface; when unicast-rpf-check-lookup-network-instance is supported, an alternate lookup network-instance may be configured.";
+        type enumeration {
+          enum loose;
+        }
+        default "loose";
+      }
+      leaf allow-default-route {
+        if-feature "srl-feat:unicast-rpf-check-allow-default-route";
+        description
+          "Allow a default route to satisfy a loose uRPF check
+
+           When true, a reverse-path best match of 0.0.0.0/0 (IPv4) or ::/0 (IPv6) causes the loose check to pass. When false, a default-route best match does not satisfy the check unless a more-specific route also matches the source address.
+
+           On platforms where this leaf is not supported, default-route eligibility is fixed and non-configurable, and behaves as if this leaf were set to false.";
+        type boolean;
+        default "true";
+      }
+      leaf lookup-network-instance {
+        if-feature "srl-feat:unicast-rpf-check-lookup-network-instance";
+        description
+          "The network-instance where source IP address lookup occurs
+
+           This is optional. If not specified, the lookup network-instance is the one that owns the subinterface where the packet arrived. When configured, the referenced network-instance must be type ip-vrf and must not be the network-instance that owns this subinterface.";
+        type leafref {
+          path "/srl-netinst:network-instance/srl-netinst:name";
+        }
+        must '(/srl-netinst:network-instance[srl-netinst:name=current()]/srl-netinst:type = "srl-netinst:ip-vrf")' {
+          error-message "uRPF lookup network-instance must be type 'ip-vrf'";
+        }
+        must 'not(/srl-netinst:network-instance[srl-netinst:name=current()]/srl-netinst:interface[srl-netinst:name=concat(current()/../../../../srl-ifs:name, ".", string(current()/../../../srl-ifs:index))])' {
+          error-message "uRPF lookup network-instance must not be the network-instance that owns this subinterface";
+        }
+      }
+      container counters {
+        config false;
+        leaf urpf-drop-packets {
+          description
+            "Number of packets of this protocol arriving on this subinterface dropped because of uRPF lookup failure";
+          type srl-comm:zero-based-counter64;
+        }
+        leaf urpf-drop-octets {
+          description
+            "Number of octets in packets of this protocol arriving on this subinterface dropped because of uRPF lookup failure";
+          type srl-comm:zero-based-counter64;
+        }
+        description
+          "Enter the counters context";
+      }
+    }
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:ipv4" {
+    if-feature "srl-feat:unicast-rpf-check";
+    uses subinterface-urpf-check;
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:ipv6" {
+    if-feature "srl-feat:unicast-rpf-check";
+    uses subinterface-urpf-check;
+  }
+}

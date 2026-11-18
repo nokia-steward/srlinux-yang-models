@@ -1,0 +1,65 @@
+module srl_nokia-system-network-instance-bgp-evpn-routes {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:evpn:system-network-instance-bgp-evpn-routes";
+  prefix srl-sys-netinst-bgp-evpn-rout;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-system-network-instance {
+    prefix srl-sys-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file models configuration of EVPN AD per EVI route selection in the system network-instance.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping bgp-evpn-routes-top {
+    description
+      "Top-level grouping containing the system network-instance EVPN route configuration";
+    container routes {
+      description
+        "Enter the routes context
+
+         EVPN route configuration in the system network-instance";
+      container ad-per-evi {
+        description
+          "Enter the ad-per-evi context
+
+           Ethernet Auto-Discovery (AD) per EVI route handling";
+        container ecmp-strict-path-selection {
+          if-feature "srl-feat:evpn-ad-evi-ecmp-strict-path-selection";
+          presence "Configure strict ECMP path selection for AD per EVI routes";
+          description
+            "Strict ECMP path selection for Ethernet AD per EVI routes
+
+             With strict ECMP disabled (default), lower-priority but valid AD routes can still
+             appear in the ECMP set, up to the defined ECMP width.
+
+             With strict ECMP enabled, only best-tied routes for the highest local-preference
+             and shortest AS-path length (in that order) are included in an ECMP set for AD per EVI
+             routes.";
+        }
+      }
+    }
+  }
+
+  augment "/srl-sys:system/srl-sys-netinst:network-instance/srl-sys-netinst:protocols/srl-sys-netinst:evpn" {
+    uses bgp-evpn-routes-top;
+  }
+}

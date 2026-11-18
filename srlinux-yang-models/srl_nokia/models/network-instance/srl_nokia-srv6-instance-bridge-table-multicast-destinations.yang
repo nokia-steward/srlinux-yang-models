@@ -1,0 +1,109 @@
+module srl_nokia-srv6-instance-bridge-table-multicast-destinations {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mcid:srv6-instance-bridge-table-multicast-destinations";
+  prefix srl-srv6-inst-brid-tbl-mult-dest;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-srv6-instance {
+    prefix srl-srv6-inst;
+  }
+  import srl_nokia-segment-routing {
+    prefix srl-segm-rout;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for bridge-table multicast destinations on the srv6 instance
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping srv6-bridge-table-multicast-destinations-destination-top {
+    list destination {
+      key "tep sid";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP)";
+      }
+      leaf sid {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "SRv6 Segment Identifier of the destination";
+      }
+      leaf multicast-forwarding {
+        srl-exts:show-importance "high";
+        type srl-comm:multicast-type;
+        description
+          "The type of multicast data forwarded by this srv6 destination.";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-srv6 destination object (system allocated)";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+          enum multicast-limit;
+        }
+        description
+          "The reason why the destination is not programmed in the floodlist";
+      }
+    }
+  }
+
+  grouping srv6-bridge-table-multicast-destinations-limits-top {
+    container multicast-limit {
+      description
+        "Enter the multicast-limit context
+
+         Multicast limits per vxlan interface.";
+      leaf maximum-entries {
+        type int32;
+        description
+          "Maximum number of multicast srv6-destinations allowed on a srv6 instance.";
+      }
+      leaf current-usage {
+        type int32;
+        description
+          "Maximum number of multicast srv6-destinations in use on this srv6 instance.";
+      }
+    }
+  }
+
+  grouping srv6-bridge-table-multicast-destinations-top {
+    container multicast-destinations {
+      config false;
+      uses srv6-bridge-table-multicast-destinations-limits-top;
+      uses srv6-bridge-table-multicast-destinations-destination-top;
+      description
+        "Enter the multicast-destinations context";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-segm-rout:segment-routing/srl-srv6-inst:srv6/srl-srv6-inst:instance/srl-srv6-inst:bridge-table" {
+    uses srv6-bridge-table-multicast-destinations-top;
+  }
+}

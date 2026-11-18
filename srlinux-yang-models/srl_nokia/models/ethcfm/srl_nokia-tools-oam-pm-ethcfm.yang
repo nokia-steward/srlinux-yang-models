@@ -1,0 +1,80 @@
+module srl_nokia-tools-oam-pm-ethcfm {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:ethcfm:tools-oam-pm-ethcfm";
+  prefix srl-tool-oam-pm-ethc;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-oam {
+    prefix srl-tool-oam;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines the tools commands available for OAM-PM ETHCFM sessions
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+
+  grouping on-demand-action {
+    leaf on-demand-action {
+      type enumeration {
+        enum start {
+          value 1;
+        }
+        enum stop {
+          value 2;
+        }
+      }
+      description
+        "Action required to start and stop an OAM-PM on-demand session";
+    }
+  }
+
+  grouping raw-bin {
+    leaf clear {
+      type empty;
+    }
+    description
+      "Clear all raw bin statistics";
+  }
+
+  augment "/srl-tool-oam:oam/srl-tool-oam:performance-monitoring" {
+    if-feature "srl-feat:oam-pm-ethcfm";
+    container ethcfm {
+      presence "Tools commands to affect IP performance monitoring tests and results";
+      description
+        "OAM-PM ETH-CFM on-demand tools";
+      list session {
+        key "session-name";
+        leaf session-name {
+          type string;
+        }
+        uses on-demand-action;
+        uses raw-bin;
+      }
+    }
+  }
+}

@@ -1,0 +1,135 @@
+module srl_nokia-tools-bgp-rpki {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:net-inst:tools-bgp-rpki";
+  prefix srl-tool-bgp-rpki;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+  import srl_nokia-tools-bgp {
+    prefix srl-tool-bgp;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "YANG model for RPKI operational (tools) commands.
+
+     Modeled in a dedicated module, separate from srl_nokia-tools-bgp,
+     so that RPKI tools commands route to the rpkimgr process instead
+     of the BGP process. This mirrors the per-file process binding
+     already used for config/state (srl_nokia-bgp-rpki.yang is bound
+     to rpkimgr in rpki_mgr_config.yml, distinct from the BGP-owned
+     srl_nokia-bgp.yang).
+
+     The augment targets the tools-only network-instance tree
+     (srl_nokia-tools-network-instance) rather than the config/state
+     tree, and nests under the tools-bgp container so the path shape
+     mirrors the config/state path (/network-instance/protocols/bgp/
+     rpki/session). Path parity with the config/state tree is what
+     lets the mgmt-server CLI auto-complete session names from
+     existing state when the user types `tools ... bgp rpki session
+     <TAB>`.
+
+     Nesting under srl_nokia-tools-bgp's container bgp (owned by
+     bgp_mgr) also gives us the application-boundary crossing that
+     the tools codegen needs. The container rpki inside this augment
+     is owned by rpki_mgr, so the parent/child owner mismatch marks
+     it as a mgmt-server delivery node in
+     srlinux::SchemaNode::IsDeliveryNode. Without such a boundary,
+     the tools codegen would emit no per-application header for
+     rpki_mgr.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping rpki-tools-top {
+    container rpki {
+      presence "Send operational commands to the RPKI-RTR manager";
+      description
+        "Enter the rpki context
+
+         RPKI-RTR operational commands, handled by the RPKI manager
+         process. Nested under the bgp tools container so the tools
+         path mirrors the state path (/network-instance/protocols/
+         bgp/rpki/session), which is what the mgmt-server CLI relies
+         on to auto-complete configured session names. Dispatch of
+         each command to rpkimgr (rather than bgpmgr) is driven by
+         the tools codegen: the container's owning application is
+         rpki_mgr per rpki_mgr_config.yml.";
+      list session {
+        key "name";
+        description
+          "Enter the session context
+
+           RPKI-RTR session-scoped operational commands. Use the
+           name 'all' to operate on every session configured under
+           this network-instance.";
+        leaf name {
+          type srl-comm:name;
+          description
+            "The configured name of the RPKI-RTR session, or 'all' to
+             operate on every RPKI-RTR session in the network-instance";
+        }
+        container clear {
+          presence "Reset the RPKI-RTR session and immediately purge all ROA entries";
+          description
+            "Reset the RPKI-RTR session and immediately purge all ROA entries
+
+             Forces an immediate TCP connection reset and purges all
+             ROA entries from the session's roa-entries container.
+             roa-entries-active drops to zero on clear. The session
+             then transitions to connecting to re-establish and
+             repopulate the ROA database from the cache server.
+
+             This differs from admin-state disable in two ways: it
+             does not enter the cleanup state, and ROA entries are
+             purged immediately rather than via a sequential cleanup
+             process. An automatic reconnect attempt is triggered
+             immediately after the clear.
+
+             This behavior is consistent with SR OS session clear
+             semantics.";
+        }
+        container statistics {
+          description
+            "Enter the statistics context
+
+             RPKI-RTR statistics operational commands, scoped to this
+             session";
+          leaf clear {
+            type empty;
+            description
+              "Reset all RPKI-RTR protocol message counters for this session
+
+               Resets all protocol message counters and
+               connection-attempts under this session's statistics
+               container to zero. Scoped to the named session only --
+               clearing one session's counters does not affect any
+               other session. Does not affect ROA entries or session
+               state.";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:protocols/srl-tool-bgp:bgp" {
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses rpki-tools-top;
+  }
+}

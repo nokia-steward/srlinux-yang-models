@@ -1,0 +1,145 @@
+module srl_nokia-platform-fabric {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:platform-fabric";
+  prefix srl-plat-fabr;
+
+  import srl_nokia-platform {
+    prefix srl-plat;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data related to fabric modules.
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  grouping fabric-slot-key {
+    description
+      "Grouping for the fabric module slot key";
+    leaf slot {
+      type uint8 {
+        range "1..255";
+      }
+      description
+        "Numeric identifier for the fabric module";
+    }
+  }
+
+  grouping fabric-state-top {
+    description
+      "Grouping for fabric module state";
+    uses fabric-slot-key;
+    leaf type {
+      config false;
+      type string;
+      srl-exts:show-importance "high";
+      description
+        "Fabric module type, as translated from the components EEPROM";
+    }
+  }
+
+  grouping fabric-top {
+    description
+      "Grouping for fabric configuration and state";
+    list fabric {
+      key "slot";
+      description
+        "Top-level container for fabric configuration and state";
+      uses fabric-state-top;
+      uses srl-plat:component-common-top;
+      uses srl-plat:component-delayed-reboot-state {
+        if-feature "srl-feat:chassis";
+      }
+      uses srl-plat:component-locator;
+      uses srl-plat:component-power-state-top;
+      uses srl-plat:component-temperature-state-top;
+      uses srl-plat:action-locator;
+      uses srl-plat:action-reboot-no-force;
+    }
+  }
+
+  grouping action-show-fabric-bandwidth {
+    description
+      "Grouping for the show-fabric-bandwidth action";
+    action show-fabric-bandwidth {
+      srl-exts:telemetry-capability "unsupported";
+      if-feature "srl-feat:chassis and srl-feat:tools-as-modeled-actions-same-io";
+      description
+        "Execute the show-fabric-bandwidth action
+
+         Show fabric bandwidth";
+      output {
+        uses srl-comm:srl-unstructured-output;
+        list fabric {
+          key "slot";
+          description
+            "Per-fabric-module bandwidth";
+          uses fabric-slot-key;
+          leaf ingress {
+            type uint64;
+            units "Gbps";
+            description
+              "Ingress (to-fabric) bandwidth for this fabric module";
+          }
+          leaf egress {
+            type uint64;
+            units "Gbps";
+            description
+              "Egress (from-fabric) bandwidth for this fabric module";
+          }
+        }
+        container total {
+          leaf ingress {
+            type uint64;
+            units "Gbps";
+            description
+              "Total ingress (to-fabric) bandwidth";
+          }
+          leaf egress {
+            type uint64;
+            units "Gbps";
+            description
+              "Total egress (from-fabric) bandwidth";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-plat:platform" {
+    if-feature "srl-feat:fabric";
+    uses fabric-top;
+    uses action-show-fabric-bandwidth;
+  }
+}

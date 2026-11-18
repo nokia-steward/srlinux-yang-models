@@ -1,0 +1,367 @@
+module srl_nokia-mpls-rsvp-tunnel-types {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mpls:mpls-rsvp-tunnel-types";
+  prefix srl-mpls-rsvp-tunn-type;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This YANG module defines the common data types used by the Resource reSerVation Protocol (RSVP).
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+
+  typedef tunnel-name {
+    type srl-comm:name {
+      length "1..64";
+    }
+    description
+      "TE Tunnel name.";
+  }
+
+  typedef path-name {
+    type srl-comm:name {
+      length "1..64";
+    }
+    description
+      "Path name.";
+  }
+
+  typedef p2p-path-name {
+    type srl-comm:name {
+      length "1..64";
+    }
+    description
+      "P2P Path name.";
+  }
+
+  typedef frr-method-type {
+    type enumeration {
+      enum facility {
+        value 1;
+      }
+    }
+    description
+      "Specifies the type for fast-reroute method.";
+  }
+
+  typedef hop-limit {
+    type uint32 {
+      range "2..255";
+    }
+    description
+      "Specifies the hop limit for the tunnel.";
+  }
+
+  typedef path-bandwidth {
+    type uint32 {
+      range "0..6400000";
+    }
+    units "megabps";
+    description
+      "Specifies the maximum bandwidth for the LSP.";
+  }
+
+  typedef priority {
+    type int32 {
+      range "0..7";
+    }
+    description
+      "Specifies the priority.";
+  }
+
+  typedef tunnel-fail-code {
+    type enumeration {
+      enum no-error {
+        value 0;
+        description
+          "Indicates no error for the LSP";
+      }
+      enum admission-control-error {
+        value 1;
+        description
+          "RSVP admission control failure occurred at some point along the path of an LSP";
+      }
+      enum no-route-to-destination {
+        value 2;
+        description
+          "No route could be found toward the requested destination";
+      }
+      enum traffic-control-system-error {
+        value 3;
+        description
+          "An error in the traffic control system due to an unsupported traffic parameter ";
+      }
+      enum routing-error {
+        value 4;
+        description
+          "There is a problem with the route defined for the LSP, for example the ERO is truncated.";
+      }
+      enum no-resources-available {
+        value 5;
+        description
+          "Insufficient system or protocol resources available to complete the request ";
+      }
+      enum bad-node {
+        value 6;
+        description
+          "Indicates a bad node in path hop list at head-end or ERO at transit.";
+      }
+      enum routing-loop {
+        value 7;
+        description
+          "A routing loop was detected for the LSP path.";
+      }
+      enum label-allocation-error {
+        value 8;
+        description
+          "Unable to allocate a label for the LSP path.";
+      }
+      enum bad-l3-pid {
+        value 9;
+        description
+          "The router has received a PathErr with the error code 'Routing problem' and the error value 'Unsupported L3PID'.";
+      }
+      enum tunnel-locally-repaired {
+        value 10;
+        description
+          "A PLR has triggered a local repair at some point along the path of the LSP.";
+      }
+      enum unknown-object-class {
+        value 11;
+        description
+          "A downstream LSR rejected an RSVP message because it contained an Unknown object class - Error code 13 defined in RFC2205.";
+      }
+      enum unknown-c-type {
+        value 12;
+        description
+          "A downstream LSR rejected an RSVP message due to an Unknown object C-type - Error code 14 defined in RFC2205.";
+      }
+      enum unknown {
+        value 16;
+        description
+          "Indicates an error not covered by one of the other known errors for this LSP.";
+      }
+      enum retry-exceeded {
+        value 17;
+        description
+          "The retry limit for the LSP path has been exceeded.";
+      }
+      enum no-cspf-route-owner {
+        value 18;
+        description
+          "No IGP instance was found that has a route to the LSP destination.";
+      }
+      enum no-cspf-route-to-destination {
+        value 19;
+        description
+          "CSPF was unable to find a route to the requested destination that satisfies all of the constraints.";
+      }
+      enum hop-limit-exceeded {
+        value 20;
+        description
+          "The hop-limit for the LSP path has been exceeded.";
+      }
+      enum srlg-secondary-not-disjoint {
+        value 24;
+        description
+          "The secondary or standby path is not SRLG disjoint from the primary path.";
+      }
+      enum srlg-primary-path-down {
+        value 26;
+        description
+          "An SRLG disjoint path could not be found for the secondary because the primary is down.";
+      }
+      enum local-link-maintenance {
+        value 27;
+        description
+          "A TE link (RSVP interface) local to this LSR or on a remote LSR used by the LSP is in TE graceful shutdown. ";
+      }
+      enum inv-ct-and-setup-priority {
+        value 31;
+        description
+          "The combination of signaled diffserv class type and setup priority does not map to a valid diffserv TE class";
+      }
+      enum inv-ct-and-hold-priority {
+        value 32;
+        description
+          "The combination of signaled diffserv class type and hold priority does not map to a valid diffserv TE class";
+      }
+      enum inv-ct-and-setup-and-hold-priority {
+        value 33;
+        description
+          "The combination of signaled diffserv class type and setup priority and hold priority does not map to a valid diffserv TE class";
+      }
+      enum local-node-maintenance {
+        value 34;
+        description
+          "The local LSR or a remote LSR used by the LSP is in TE graceful shutdown due to maintenance The LSR that s shutdown is also identified.";
+      }
+      enum soft-preemption {
+        value 35;
+        description
+          "The LSP path is under soft pre-emption.";
+      }
+      enum rsvp-not-supported {
+        value 41;
+        description
+          "Maps to SubErrorCode 8 for ErrorCode 24 (Routing error) from RFC 3209.
+
+           An LSR will send ErrorCode=24, SubErrorCode=8 when it receives PATH for P2MP LSP but P2MP is not supported on that router.";
+      }
+      enum conflicting-admin-groups {
+        value 42;
+        description
+          "The specified admin groups contradict e.g. the same group is both included and excluded.";
+      }
+      enum node-in-igp-overload {
+        value 43;
+        description
+          "An LSR along the path of the LSP has advertised the IS-IS overload state.";
+      }
+      enum mpls-v4-down {
+        value 60;
+        description
+          "MPLS IPv4 is operationally down";
+      }
+      enum tunnel-admin-down {
+        value 62;
+        description
+          "LSP is admin down.";
+      }
+      enum path-admin-down {
+        value 63;
+        description
+          "Path or LSP path is admin down.";
+      }
+      enum path-retried {
+        value 66;
+        description
+          "LSP path was brought down and retried.";
+      }
+      enum non-active-secondary {
+        value 68;
+        description
+          "Secondary path is down because the LSP has an alternate active path.";
+      }
+      enum auto-bandwidth-adjustment {
+        value 69;
+        description
+          "For an auto-bandwidth LSP, operational bandwidth for a non-active LSP path
+           does not match the bandwidth configured for that path and we were not able
+           adjust the bandwidth via MBB.";
+      }
+      enum path-degraded {
+        value 71;
+        description
+          "Non-active path was brought down because it was in degraded state (FRR active,
+           soft-preempted, etc.) and we could not use MBB to resignal the path. ";
+      }
+      enum lsp-self-ping-timeout {
+        value 72;
+        description
+          "LSP self-ping timed out.";
+      }
+      enum rsvp-error {
+        value 73;
+        description
+          "RSVP signaling errors like ResvTear received, egress neighbor down etc.";
+      }
+      enum rsvp-neighbor-down {
+        value 76;
+        description
+          "RSVP neighbor is down for the RSVP-TE LSP.";
+      }
+      enum resv-timeout {
+        value 77;
+        description
+          "RESV state timed out for RSVP-TE LSP.";
+      }
+      enum resv-tear {
+        value 78;
+        description
+          "ResvTear message received for RSVP-TE LSP.";
+      }
+      enum frr-path-down {
+        value 79;
+        description
+          "Fast-reroute enabled RSVP-TE LSP was actively using backup path and backup path went down.";
+      }
+      enum tunnel-init-retry-timeout {
+        value 80;
+        description
+          "Initial retry timer expired for RSVP-TE LSP.";
+      }
+      enum iom-programming-failure {
+        value 81;
+        description
+          "IOM programming failed for RSVP-TE LSP.";
+      }
+    }
+    description
+      "Defines the reason for LSP Path and LSP Crossconnect failure.";
+  }
+
+  typedef mbb-type {
+    type enumeration {
+      enum none {
+        value 0;
+        description
+          "No MBB type applies.";
+      }
+      enum config-change {
+        value 1;
+        description
+          "MBB triggered by a configuration change.";
+      }
+      enum timer-based-reoptimization {
+        value 2;
+        description
+          "MBB triggered by timer-based reoptimization.";
+      }
+      enum manual-reoptimization {
+        value 3;
+        description
+          "MBB triggered by a manual reoptimization command.";
+      }
+      enum global-revert {
+        value 4;
+        description
+          "MBB triggered by global revert.";
+      }
+      enum delayed-retry {
+        value 5;
+        description
+          "MBB triggered by a delayed retry.";
+      }
+      enum graceful-shutdown {
+        value 6;
+        description
+          "MBB triggered by graceful shutdown.";
+      }
+      enum soft-preemption {
+        value 7;
+        description
+          "MBB triggered by soft preemption.";
+      }
+    }
+    description
+      "Type of Make-Before-Break (MBB).";
+  }
+}

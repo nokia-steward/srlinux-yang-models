@@ -1,0 +1,41 @@
+module srl_nokia-tools-cgroup {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:tools-cgroup";
+  prefix srl-tool-cgro;
+
+  import srl_nokia-tools-system {
+    prefix srl-tool-sys;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines query commands related to the cgroup in the system.
+
+     Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+
+  grouping cgroup-top {
+    container cgroup {
+      presence "Command for tools system cgroup";
+      description
+        "Top-level container for query commands related to cgroup in the system";
+    }
+  }
+
+  augment "/srl-tool-sys:system" {
+    uses cgroup-top;
+  }
+}

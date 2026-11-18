@@ -1,0 +1,87 @@
+module srl_nokia-tools-vxlan-tunnel {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:vxlan:tools-vxlan-tunnel";
+  prefix srl-tool-vxla-tunn;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-tools-tunnel {
+    prefix srl-tool-tunn;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational commands on vxlan tunnels.
+
+     Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+
+  grouping tools-vxlan-tunnel-vtep-top {
+    description
+      "Top-level grouping for vxlan-tunnel vtep tools.";
+    list vtep {
+      key "address";
+      description
+        "IP address that identifies the remote VXLAN Termination Endpoint (VTEP)";
+      leaf address {
+        type srl-comm:ip-address;
+        description
+          "IP address that identifies the remote VXLAN Termination Endpoint (VTEP)";
+      }
+      container statistics {
+        leaf clear {
+          type empty;
+        }
+        description
+          "Enter the statistics context";
+      }
+    }
+  }
+
+  grouping tools-vxlan-tunnel-top {
+    description
+      "Top-level grouping for vxlan-tunnel tools.";
+    container vxlan-tunnel {
+      if-feature "srl-feat:vxlan";
+      container statistics {
+        leaf clear {
+          type empty;
+        }
+        description
+          "Enter the statistics context";
+      }
+      uses tools-vxlan-tunnel-vtep-top;
+      description
+        "Enter the vxlan-tunnel context";
+    }
+  }
+
+  augment "/srl-tool-tunn:tunnel" {
+    uses tools-vxlan-tunnel-top;
+  }
+}

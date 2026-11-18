@@ -1,0 +1,255 @@
+module srl_nokia-tunnel-interfaces {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:vxlan:tunnel-interfaces";
+  prefix srl-tunn-ifs;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for tunnel-interfaces in SRLinux.
+
+     Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+  revision 2021-06-30 {
+    description
+      "SR Linux 21.6.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+
+  typedef tunnel-interface-all {
+    type string {
+      length "6..8";
+      pattern '(vxlan(0|1[0-9][0-9]|2([0-4][0-9]|5[0-5])|[1-9][0-9]|[1-9]))';
+    }
+    description
+      "The type of the tunnel-interface.";
+  }
+
+  typedef vlan-id {
+    type uint16 {
+      range "1..4094";
+    }
+    description
+      "Type definition representing a single-tagged VLAN ID";
+  }
+
+  grouping tunnel-interface-top {
+    description
+      "Top-level configuration and state for tunnel interfaces.";
+    list tunnel-interface {
+      if-feature "srl-feat:vxlan";
+      key "name";
+      srl-exts:first-released "21.3.1";
+      description
+        "In the case that the interface is logical tunnel
+         interface, the parameters for the tunnel are
+         specified within this subtree. Tunnel interfaces
+         have only a single logical subinterface associated
+         with them.";
+      leaf name {
+        type tunnel-interface-all;
+        description
+          "The name of the tunnel-interface.
+
+           Valid options are:
+           vxlan<N>, N=0..255";
+      }
+      uses vxlan-interface-top;
+    }
+  }
+
+  grouping vxlan-interface-top {
+    description
+      "Vxlan-interface grouping.";
+    list vxlan-interface {
+      max-elements 16384;
+      key "index";
+      srl-exts:first-released "21.3.1";
+      description
+        "The list of vxlan-interfaces.";
+      leaf index {
+        type uint32 {
+          range "0..99999999";
+        }
+        description
+          "The index of the vxlan-tunnel.";
+      }
+      leaf type {
+        mandatory true;
+        type identityref {
+          base srl-ifs:si-type;
+        }
+        description
+          "The value of this leaf indicates the context in which the
+           vxlan-interface will be used in.";
+        must ".='srl-ifs:bridged' or .='srl-ifs:routed'" {
+          error-message "unsupported type.";
+        }
+        must "not(.='srl-ifs:bridged')" {
+          error-message "unsupported type.";
+          srl-exts:if-feature "not srl-feat:evpn-vxlan-mac-vrf";
+        }
+        must "not(.='srl-ifs:routed')" {
+          error-message "unsupported type.";
+          srl-exts:if-feature "not srl-feat:evpn-vxlan-ifl";
+        }
+      }
+      leaf irb-termination {
+        if-feature "srl-feat:vxlan-irb-termination-control";
+        srl-exts:show-importance "high";
+        type boolean;
+        default "false";
+        must ". = false() or ../type = 'srl-ifs:bridged'" {
+          error-message "irb-termination not allowed with vxlan-interface type routed.";
+        }
+        description
+          "Controls allocation of a station-tcam-2 entry on supported Hx platforms for terminating VXLAN traffic into the associated IRB subinterface
+
+           Station-tcam-2 is the overlay my-station TCAM. It is used to terminate the inner destination IRB MAC of
+           VXLAN packets, and also holds the system IFL MAC entry. When configured to true, the router attempts
+           to allocate a station-tcam-2 entry for this vxlan-interface. When read from state, this leaf is true only if
+           the station-tcam-2 entry was successfully allocated and VXLAN traffic can therefore be terminated into the IRB
+           subinterface. When the configured value is false, or the state value is false, the IRB subinterface and the
+           vxlan-interface may remain oper-up, but while traffic between local subinterfaces and the IRB is forwarded normally,
+           VXLAN traffic with an inner destination MAC matching the IRB MAC is not routed.";
+      }
+      leaf oper-state {
+        srl-exts:show-importance "high";
+        config false;
+        type enumeration {
+          enum up;
+          enum down;
+        }
+        description
+          "The operational state of the vxlan-interface";
+      }
+      leaf oper-down-reason {
+        srl-exts:show-importance "high";
+        config false;
+        type enumeration {
+          enum mac-failed;
+          enum ingress-hash-failed;
+          enum egress-hash-failed;
+          enum other;
+        }
+        description
+          "The reason why the vxlan-interface is oper-down";
+      }
+      container ingress {
+        leaf vni {
+          type uint32 {
+            range "1..16777215";
+          }
+          mandatory true;
+          description
+            "Ingress VXLAN Network Identifier of the VXLAN subinterface.
+
+             The egress VNI is determined by the static egress-vni configured in the associated destination
+             or by the dynamic egress-vni learned from the control plane.";
+        }
+        description
+          "Enter the ingress context";
+      }
+      container egress {
+        leaf source-ip {
+          type union {
+            type enumeration {
+              enum use-system-ipv4-address {
+                value 0;
+              }
+            }
+          }
+          default "use-system-ipv4-address";
+          description
+            "The ip-address that will be used as the source-ip for all vxlan traffic egressing this vxlan-interface.";
+        }
+        container inner-ethernet-header {
+          description
+            "Parameters of the inner VXLAN ethernet payload when the VXLAN tunnel is used in an ip-vrf.";
+          presence "Configure the inner-ethernet-header";
+          must "../../type != 'srl-ifs:bridged'" {
+            error-message "Inner-ethernet-header not allowed with vxlan-interface type bridged.";
+          }
+          leaf source-mac {
+            type union {
+              type enumeration {
+                enum use-system-mac {
+                  value 0;
+                }
+              }
+            }
+            default "use-system-mac";
+            description
+              "VXLAN inner ethernet source mac-address. Present when the VXLAN tunnel is associated
+               with a ip-vrf network-instance.";
+          }
+          leaf used-source-mac {
+            config false;
+            type srl-comm:mac-address;
+            description
+              "VXLAN inner ethernet source mac-address in use. Present when the VXLAN tunnel is associated
+               with a ip-vrf network-instance.";
+          }
+        }
+        description
+          "Enter the egress context";
+      }
+      uses bridge-table-group-top;
+    }
+  }
+
+  grouping bridge-table-group-top {
+    container bridge-table {
+      presence "Bridge table config and state on the vxlan-interface";
+      must "../type = 'srl-ifs:bridged'" {
+        error-message "bridge-table allowed only with vxlan-interface type bridged.";
+      }
+    }
+  }
+
+  uses tunnel-interface-top;
+}

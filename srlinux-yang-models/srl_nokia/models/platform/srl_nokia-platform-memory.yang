@@ -1,0 +1,95 @@
+module srl_nokia-platform-memory {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:linux:platform-memory";
+  prefix srl-plat-memo;
+
+  import srl_nokia-platform {
+    prefix srl-plat;
+  }
+  import srl_nokia-platform-control {
+    prefix srl-plat-ctrl;
+  }
+  import srl_nokia-platform-lc {
+    prefix srl-plat-lc;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data related to system memory.
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  grouping memory-state-top {
+    description
+      "Operational state data for system memory";
+    leaf physical {
+      type uint64;
+      units "bytes";
+      description
+        "Total physical memory available on this component";
+    }
+    leaf reserved {
+      type uint64;
+      units "bytes";
+      description
+        "Memory reserved for system use";
+    }
+    leaf free {
+      type uint64;
+      units "bytes";
+      description
+        "Memory available for system use";
+    }
+    leaf utilization {
+      type srl-comm:percentage;
+      description
+        "Total memory utilized";
+    }
+  }
+
+  grouping memory-top {
+    description
+      "Top-level grouping for system memory state";
+    container memory {
+      description
+        "Enter the memory context
+
+         Top-level container for system memory state";
+      config false;
+      uses memory-state-top;
+    }
+  }
+
+  augment "/srl-plat:platform/srl-plat-ctrl:control" {
+    uses memory-top;
+  }
+
+  augment "/srl-plat:platform/srl-plat-lc:linecard" {
+    if-feature "srl-feat:chassis";
+    uses memory-top;
+  }
+}

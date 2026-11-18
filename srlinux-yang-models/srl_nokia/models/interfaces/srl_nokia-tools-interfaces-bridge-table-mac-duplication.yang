@@ -1,0 +1,68 @@
+module srl_nokia-tools-interfaces-bridge-table-mac-duplication {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac:tools-interfaces-bridge-table-mac-duplication";
+  prefix srl-tool-ifs-brid-tbl-mac-dupl;
+
+  import srl_nokia-tools-interfaces {
+    prefix srl-tool-ifs;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for interface bridge-table mac duplication operational commands
+
+     Copyright 2020-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+
+  grouping tools-bridge-table-mac-duplication-top {
+    container mac-duplication {
+      presence "bridge table mac duplication";
+      leaf delete-all-macs {
+        type empty;
+        description
+          "Delete all learnt mac entries.";
+      }
+      container duplicate-entries {
+        list mac {
+          key "address";
+          description
+            "macs learnt on the bridging instance";
+          leaf address {
+            type srl-comm:mac-address;
+          }
+          leaf delete-mac {
+            type empty;
+            description
+              "delete the duplicate mac address.";
+          }
+        }
+        description
+          "Enter the duplicate-entries context";
+      }
+    }
+  }
+
+  augment "/srl-tool-ifs:interface/srl-tool-ifs:subinterface/srl-tool-ifs:bridge-table" {
+    uses tools-bridge-table-mac-duplication-top;
+  }
+}

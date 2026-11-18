@@ -1,0 +1,292 @@
+module srl_nokia-mcast-cac {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mcast-cac:mcast-cac";
+  prefix srl-mcas-cac;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-mcast-cac-types {
+    prefix srl-mcas-cac-type;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file contains common Multicast Connection Access Control (MCAC) types and identities
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+
+  grouping mcac-policy-key {
+    leaf policy-name {
+      description
+        "Multicast CAC policy name.";
+      type srl-comm:name;
+    }
+  }
+
+  grouping mcac-interface-config {
+    container mcac {
+      if-feature "srl-feat:mcac";
+      leaf policy {
+        description
+          "";
+        type leafref {
+          path "/srl-sys:system/srl-mcas-cac:mcac/srl-mcas-cac:policy/srl-mcas-cac:policy-name";
+        }
+      }
+      container bandwidth-limit {
+        leaf total-allocated-bandwidth {
+          description
+            "Maximum allowed bandwidth allocated for multicast.";
+          type srl-mcas-cac-type:bandwidth-limit;
+          must '../reserved-guaranteed-bandwidth' {
+            error-message "cannot be set without reserved-guaranteed-bandwidth";
+          }
+        }
+        leaf reserved-guaranteed-bandwidth {
+          description
+            "Pre-reserved bandwidth for all guaranteed channels.";
+          type srl-mcas-cac-type:bandwidth-limit;
+          must '../total-allocated-bandwidth' {
+            error-message "cannot be set without total-allocated-bandwidth";
+          }
+          must '. < ../total-allocated-bandwidth' {
+            error-message "reserved-guaranteed-bandwidth cannot be more than total-allocated-bandwidth";
+          }
+        }
+        leaf best-effort-bandwidth {
+          config false;
+          srl-exts:show-importance "high";
+          description
+            "Reserved bandwidth for all best effort channels.  The best effort bandwidth is automatically calulated from the difference between total allocated bandwidth minus reversed guaranteed bandwidth";
+          type srl-mcas-cac-type:bandwidth-limit;
+        }
+        description
+          "Enter the bandwidth-limit context";
+      }
+      leaf guaranteed-bw-use {
+        config false;
+        srl-exts:show-importance "high";
+        description
+          "Operational in-use bandwidth for the guaranteed channels for this interface policy.";
+        type srl-mcas-cac-type:bandwidth;
+      }
+      leaf guaranteed-bw-available {
+        config false;
+        srl-exts:show-importance "high";
+        description
+          "Bandwidth remaining for guaranteed channels";
+        type srl-mcas-cac-type:bandwidth;
+      }
+      leaf best-effort-bw-use {
+        config false;
+        srl-exts:show-importance "high";
+        description
+          "Operational in-use bandwidth for the best-effort channels for this interface policy.";
+        type srl-mcas-cac-type:bandwidth;
+      }
+      leaf best-effort-bw-available {
+        config false;
+        srl-exts:show-importance "high";
+        description
+          "Bandwidth remaining for best effort channels";
+        type srl-mcas-cac-type:bandwidth;
+      }
+      description
+        "Enter the mcac context";
+    }
+  }
+
+  grouping mcac-policy-config {
+    leaf description {
+      description
+        "Text description.";
+      type string;
+    }
+    leaf default-action {
+      description
+        "Default-action for this mcac-policy.";
+      type srl-mcas-cac-type:policy-action;
+      default "discard";
+    }
+    leaf source-specific-accounting {
+      description
+        "Global setting for this MCAC policy.  Count bandwidth based on both group and source specific address matching a range in the channel-group";
+      type boolean;
+      default "false";
+    }
+  }
+
+  grouping mcac-policy-channel-group-key {
+    leaf channel-group-name {
+      description
+        "Multicast CAC policy channel-group name.";
+      type string;
+    }
+  }
+
+  grouping mcac-policy-channel-group-config {
+    leaf admin-state {
+      description
+        "Administrative state of the channel-group.";
+      type srl-comm:admin-state;
+      default "disable";
+    }
+    leaf description {
+      description
+        "Text description.";
+      type string;
+    }
+    leaf bandwidth {
+      description
+        "Maximum bandwidth allowed for this channel-group.";
+      type srl-mcas-cac-type:bandwidth {
+        range "1..4294967295";
+      }
+      default "100";
+    }
+    leaf source-specific-accounting {
+      description
+        "Overrides the global source specific accounting setting.  Count bandwidth based on both group and source specific address matching a range within the channel-group";
+      type enumeration {
+        enum true {
+          value 1;
+        }
+        enum false {
+          value 2;
+        }
+        enum policy {
+          value 3;
+        }
+      }
+      default "policy";
+    }
+  }
+
+  grouping mcac-policy-channel-group-channel-key {
+    leaf start {
+      description
+        "Group range start.";
+      type srl-comm:ip-address;
+      must "(re-match(.,'22[4-9]\\..*') or re-match(.,'23[0-9]\\..*')) or starts-with(.,'ff')" {
+        error-message "Not a valid multicast address";
+      }
+      must "not ((. >= '224.0.0.0') and (. <= '224.0.0.255'))" {
+        error-message "Must not be in the reserved multicast address range 224.0.0.0 to 224.0.0.255";
+      }
+      must "not (re-match(.,'[f]{2}[0-9a-f][0-3].*') or re-match(.,'[f]{2}[0-9a-f][f].*'))" {
+        error-message "Not a valid IPv6 multicast address scope";
+      }
+    }
+    leaf end {
+      description
+        "Group range end.";
+      type srl-comm:ip-address;
+      must "(re-match(.,'22[4-9]\\..*') or re-match(.,'23[0-9]\\..*')) or starts-with(.,'ff')" {
+        error-message "Not a valid multicast address";
+      }
+      must "not ((. >= '224.0.0.0') and (. <= '224.0.0.255'))" {
+        error-message "Must not be in the reserved multicast address range 224.0.0.0 to 224.0.0.255";
+      }
+      must "not (re-match(.,'[f]{2}[0-9a-f][0-3].*') or re-match(.,'[f]{2}[0-9a-f][f].*'))" {
+        error-message "Not a valid IPv6 multicast address scope";
+      }
+    }
+    leaf source {
+      description
+        "Source prefix.";
+      type srl-comm:ip-prefix;
+    }
+  }
+
+  grouping mcac-policy-channel-group-channel-config {
+    leaf bandwidth {
+      description
+        "Channel bandwidth.";
+      type srl-mcas-cac-type:bandwidth {
+        range "10..10000000";
+      }
+      mandatory true;
+    }
+    leaf priority-class {
+      description
+        "Specify the channel priority class. The system utilizes the priority class when re-evaluate the channel group list.";
+      type enumeration {
+        enum low {
+          value 1;
+        }
+        enum high {
+          value 2;
+        }
+      }
+      default "low";
+    }
+    leaf type {
+      description
+        "Channel type which can be of type Guaranteed or Best Effort.";
+      type srl-mcas-cac-type:channel-type;
+      default "best-effort";
+    }
+  }
+
+  grouping mcac-top {
+    container mcac {
+      if-feature "srl-feat:mcac";
+      presence "Configure MCAC";
+      list policy {
+        description
+          "Configure multicast CAC policy.";
+        key "policy-name";
+        uses mcac-policy-key;
+        uses mcac-policy-config;
+        list channel-group {
+          description
+            "Add/remove channel-group for mcac policy (maximum of 64 unique
+             channel-groups can be specified).";
+          max-elements 64;
+          key "channel-group-name";
+          uses mcac-policy-channel-group-key;
+          uses mcac-policy-channel-group-config;
+          list channel {
+            description
+              "Add/remove multicast channel configuration.";
+            key "start end source";
+            uses mcac-policy-channel-group-channel-key;
+            uses mcac-policy-channel-group-channel-config;
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    uses mcac-top;
+  }
+}

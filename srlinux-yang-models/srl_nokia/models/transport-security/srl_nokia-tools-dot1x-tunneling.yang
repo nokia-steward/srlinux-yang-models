@@ -1,0 +1,54 @@
+module srl_nokia-tools-dot1x-tunneling {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:dot1x:tools-tunneling";
+  prefix srl-tool-dot1-tunn;
+
+  import srl_nokia-tools-system {
+    prefix srl-tool-sys;
+  }
+  import srl_nokia-tools-dot1x {
+    prefix srl-tool-dot1;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational commands for dot1x tunnel.
+
+     Copyright 2025-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+
+  grouping tunneling-top {
+    container tunnel {
+      description
+        "Enclosing container for tools system dot1x tunnel";
+      if-feature "srl-feat:dot1x-tunnel";
+      presence "Configure tools system dot1x tunnel";
+      leaf clear {
+        type empty;
+        description
+          "Clears the statistics for interface and system level 802.1x.";
+      }
+    }
+  }
+
+  augment "/srl-tool-sys:system/srl-tool-dot1:dot1x" {
+    if-feature "srl-feat:dot1x-tunnel";
+    uses tunneling-top;
+  }
+}

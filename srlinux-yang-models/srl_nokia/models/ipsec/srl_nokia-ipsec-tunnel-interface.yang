@@ -1,0 +1,135 @@
+module srl_nokia-ipsec-tunnel-interface {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:ipsec:ipsec-tunnel-interface";
+  prefix srl-ipse-tunn-if;
+
+  import srl_nokia-ipsec {
+    prefix srl-ipse;
+  }
+  import srl_nokia-ipsec-types {
+    prefix srl-ipse-type;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module augments interfaces with IPsec tunnel configuration
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping ipsec-tunnel-if-top {
+    container tunnel {
+      if-feature "srl-feat:ipsec-inline-fastpath";
+      presence "Enable tunnel configuration";
+      description
+        "IPsec tunnel configuration and state";
+      must "starts-with(../srl-ifs:name,'ipsec')" {
+        error-message "tunnel container can only be configured on ipsec interfaces";
+      }
+      must "not(source-address and destination-address) or "
+         + "(contains(source-address, ':') and contains(destination-address, ':')) or "
+         + "(not(contains(source-address, ':')) and not(contains(destination-address, ':')))" {
+        error-message "source-address and destination-address must be of the same address family";
+      }
+      leaf source-address {
+        type srl-comm:ip-address-unicast-without-local;
+        mandatory true;
+        description
+          "Source tunnel endpoint address";
+      }
+      leaf destination-address {
+        type srl-comm:ip-address-unicast-without-local;
+        mandatory true;
+        description
+          "Destination tunnel endpoint address";
+      }
+      leaf encap-network-instance {
+        description
+          "Network instance where tunnel packet is forwarded in";
+        type leafref {
+          path "/srl-netinst:network-instance/srl-netinst:name";
+        }
+        must "/srl-netinst:network-instance[srl-netinst:name = current()]"
+           + "/srl-netinst:type = 'srl-netinst:ip-vrf' or "
+           + "/srl-netinst:network-instance[srl-netinst:name = current()]"
+           + "/srl-netinst:type = 'srl-netinst:default'" {
+          error-message "The referenced network-instance must be of "
+                      + "type 'ip-vrf' or 'default'.";
+        }
+      }
+      container ipsec {
+        description
+          "Enter the ipsec context
+
+           IPsec configuration and state";
+        leaf ipsec-group {
+          description
+            "Reference to an IPsec group";
+          type leafref {
+            path "/srl-ipse:ipsec/srl-ipse:ipsec-group/srl-ipse:name";
+          }
+        }
+        container key-exchange {
+          description
+            "Enter the key-exchange context
+
+             Key exchange method";
+          choice key-exchange {
+            description
+              "Selection of the key exchange method";
+            case dynamic {
+              description
+                "Dynamic key exchange";
+              container dynamic {
+                description
+                  "Enter the dynamic context
+
+                   Dynamic key exchange using IKE";
+                leaf pre-shared-key {
+                  description
+                    "Pre-shared key for the tunnel";
+                  type srl-ipse-type:ipsec-secret;
+                }
+                leaf ipsec-profile {
+                  description
+                    "IPsec profile for the tunnel";
+                  mandatory true;
+                  type leafref {
+                    path "/srl-ipse:ipsec/srl-ipse:ipsec-profile/srl-ipse:name";
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-ifs:interface" {
+    description
+      "Adds IPsec tunnel configuration to interfaces";
+    uses ipsec-tunnel-if-top;
+  }
+}

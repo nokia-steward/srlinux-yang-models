@@ -1,0 +1,187 @@
+module srl_nokia-grpc-gnoi-healthz {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:grpc:grpc-gnoi-healthz";
+  prefix srl-grpc-gnoi-heal;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for gNOI Healthz operational actions
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping healthz-clear-output {
+    leaf-list warning {
+      type string;
+      description
+        "Warning encountered while clearing healthz events";
+    }
+  }
+
+  grouping component-clear {
+    action clear {
+      srl-exts:telemetry-capability "unsupported";
+      if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+      description
+        "Execute the clear action
+
+         Clear healthz events for this component";
+      output {
+        uses healthz-clear-output;
+      }
+    }
+  }
+
+  grouping healthz-actions {
+    container healthz {
+      config false;
+      description
+        "Enter the healthz context
+
+         gNOI Healthz tools commands";
+      action clear {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+        description
+          "Execute the clear action
+
+           Clear all healthz events";
+        output {
+          uses healthz-clear-output;
+        }
+      }
+      container chassis {
+        description
+          "Enter the chassis context
+
+           Chassis component";
+        uses component-clear;
+      }
+      list control {
+        key "slot";
+        description
+          "Enter the control context
+
+           Control module component";
+        leaf slot {
+          type string {
+            pattern 'A|B';
+          }
+          description
+            "Slot identifier for the control module";
+        }
+        uses component-clear;
+      }
+      list fabric {
+        key "slot";
+        description
+          "Enter the fabric context
+
+           Fabric module component";
+        leaf slot {
+          type uint8;
+          description
+            "Numeric identifier for the fabric module";
+        }
+        uses component-clear;
+      }
+      list fan-tray {
+        key "id";
+        description
+          "Enter the fan-tray context
+
+           Fan component";
+        leaf id {
+          type uint8;
+          description
+            "Numeric identifier for the fan module";
+        }
+        uses component-clear;
+      }
+      list linecard {
+        key "slot";
+        description
+          "Enter the linecard context
+
+           Line card component
+
+           Clearing a slot component will not clear it's corresponding forwarding-complex components.
+           Similarly, clearing a forwarding-complex component will not clear the slot component.";
+        leaf slot {
+          type uint8;
+          description
+            "Numeric identifier for the line card";
+        }
+        action clear {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-grpc-server";
+          description
+            "Execute the clear action
+
+             Clear healthz events for this component";
+          input {
+            leaf forwarding-complex {
+              if-feature "srl-feat:gnoi-healthz-forwarding-complex";
+              description
+                "individual ASIC (forwarding-complex) component";
+              type enumeration {
+                enum 0;
+                enum 1 {
+                  if-feature "srl-feat:forwarding-complex-1";
+                }
+              }
+            }
+          }
+          output {
+            uses healthz-clear-output;
+          }
+        }
+      }
+      list power-supply {
+        key "id";
+        description
+          "Enter the power-supply context
+
+           Power supply component";
+        leaf id {
+          type uint8;
+          description
+            "Numeric identifier for the power supply module";
+        }
+        uses component-clear;
+      }
+      list transceiver {
+        key "interface";
+        description
+          "Enter the transceiver context
+
+           Transceiver component";
+        leaf interface {
+          type srl-comm:name;
+          description
+            "Interface name for the transceiver module";
+        }
+        uses component-clear;
+      }
+    }
+  }
+}

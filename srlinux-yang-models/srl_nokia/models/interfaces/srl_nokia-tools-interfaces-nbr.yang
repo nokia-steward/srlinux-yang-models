@@ -1,0 +1,98 @@
+module srl_nokia-tools-interfaces-nbr {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:arp-nd:tools-interfaces-nbr";
+  prefix srl-tool-ifs-nbr;
+
+  import srl_nokia-tools-interfaces {
+    prefix srl-tool-ifs;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational commands on ARP and ND tables.
+
+     Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+  revision 2019-11-30 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  grouping arp-top {
+    container arp {
+      presence "IPv4 ARP protocol is enabled";
+      must "not(starts-with(../../../srl-tool-ifs:name, 'lo') or starts-with(../../../srl-tool-ifs:name, 'system'))" {
+        error-message "ARP is not supported on loopback or system interfaces";
+      }
+      list neighbor {
+        key "ipv4-address";
+        leaf ipv4-address {
+          type srl-comm:ipv4-address;
+          description
+            "IPv4 address resolved by the ARP entry";
+        }
+        leaf delete-dynamic {
+          type empty;
+          description
+            "Delete one specific dynamic ARP entry";
+        }
+      }
+      leaf delete-dynamic {
+        type empty;
+        description
+          "Delete all dynamic ARP entries";
+      }
+    }
+  }
+
+  grouping nd-top {
+    container neighbor-discovery {
+      presence "IPv6 ND protocol is enabled";
+      must "not(starts-with(../../../srl-tool-ifs:name, 'lo') or starts-with(../../../srl-tool-ifs:name, 'system'))" {
+        error-message "ND is not supported on loopback or system interfaces";
+      }
+      list neighbor {
+        key "ipv6-address";
+        leaf ipv6-address {
+          type srl-comm:ipv6-address;
+          description
+            "IPv6 address resolved by the ND cache entry";
+        }
+        leaf delete-dynamic {
+          type empty;
+          description
+            "Delete one specific dynamic neighbor cache entry";
+        }
+      }
+      leaf delete-dynamic {
+        type empty;
+        description
+          "Delete all dynamic neighbor cache entries";
+      }
+    }
+  }
+
+  augment "/srl-tool-ifs:interface/srl-tool-ifs:subinterface/srl-tool-ifs:ipv4" {
+    uses arp-top;
+  }
+
+  augment "/srl-tool-ifs:interface/srl-tool-ifs:subinterface/srl-tool-ifs:ipv6" {
+    uses nd-top;
+  }
+}

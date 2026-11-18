@@ -1,0 +1,145 @@
+module srl_nokia-tools-qos {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:qos:tools-qos";
+  prefix srl-tool-qos;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Copyright 2019-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2023-07-31 {
+    description
+      "SR Linux 23.7.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+  revision 2022-06-30 {
+    description
+      "SR Linux 22.6.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+  revision 2019-06-26 {
+    description
+      "SR Linux 19.11.1";
+  }
+
+  container qos {
+    if-feature "srl-feat:qos";
+    container interfaces {
+      presence "Enables configuration of QoS parameters for the interface";
+      description
+        "Interfaces and subinterfaces with QoS configuration and state";
+      list interface {
+        key "interface-id";
+        description
+          "List of interfaces and subinterfaces referenced by QoS policies";
+        leaf interface-id {
+          type string;
+          description
+            "Identifier for the interface or subinterface";
+        }
+        container pfc {
+          description
+            "Enter the pfc context
+
+             Clearing PFC statisctics on per interface basis";
+          if-feature "srl-feat:qos-pfc";
+          leaf clear-statistics {
+            type empty;
+          }
+        }
+        container input {
+          if-feature "(srl-feat:ingress-subif-policing and srl-feat:subif-policer) or srl-feat:qos-policer-policies";
+          description
+            "Enter the input context";
+        }
+        container output {
+          container queues {
+            list queue {
+              key "queue-name";
+              leaf queue-name {
+                type string;
+                description
+                  "The queue name";
+              }
+              container queue-statistics {
+                leaf clear {
+                  type empty;
+                }
+                description
+                  "Enter the queue-statistics context";
+              }
+            }
+            leaf clear-statistics {
+              type empty;
+            }
+            description
+              "Enter the queues context";
+          }
+          description
+            "Enter the output context";
+        }
+      }
+    }
+    container packet-trimming {
+      if-feature "srl-feat:qos-global-packet-trimming-stats";
+      description
+        "Enter the packet-trimming context
+
+         Clearing chassis-wide packet-trimming statistics";
+      leaf clear-stats {
+        type empty;
+        description
+          "Clear the packet-trimming statistics of the system";
+      }
+    }
+    description
+      "Enter the qos context";
+  }
+}

@@ -1,0 +1,283 @@
+module srl_nokia-srv6-instance-bridge-table-unicast-destinations {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac:srl_nokia-srv6-instance-bridge-table-unicast-destinations";
+  prefix srl-srv6-inst-brid-tbl-unic-dest;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-srv6-instance {
+    prefix srl-srv6-inst;
+  }
+  import srl_nokia-segment-routing {
+    prefix srl-segm-rout;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for bridge-table unicast destinations on the srv6 instance
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping srv6-instance-bridge-table-statistics-top {
+    description
+      "Statistics related to the bridge-table";
+    container statistics {
+      config false;
+      leaf active-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of entries that are active on the srv6 instance";
+        srl-exts:show-importance "high";
+      }
+      leaf total-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, active and inactive, on the srv6 instance";
+        srl-exts:show-importance "high";
+      }
+      leaf failed-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, which have not been programmed on at least one slot";
+        srl-exts:show-importance "high";
+      }
+      list mac-type {
+        key "type";
+        description
+          "The type of the mac on the srv6 instance";
+        leaf type {
+          type srl-comm:mac-type;
+          srl-exts:show-importance "high";
+        }
+        leaf active-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of entries of this type on the srv6 instance";
+          srl-exts:show-importance "high";
+        }
+        leaf total-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, active and inactive, on the srv6 instance";
+          srl-exts:show-importance "high";
+        }
+        leaf failed-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, which have not been programmed on at least one slot";
+          srl-exts:show-importance "high";
+        }
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping srv6-instance-bridge-table-mac-table-top {
+    container mac-table {
+      config false;
+      list mac {
+        key "address";
+        description
+          "macs learnt on the bridging instance";
+        leaf address {
+          type srl-comm:mac-address;
+        }
+        leaf type {
+          type srl-comm:mac-type;
+          srl-exts:show-importance "high";
+          description
+            "The type of the mac installed in the fib";
+        }
+        leaf last-update {
+          type srl-comm:date-and-time-delta;
+          srl-exts:show-importance "high";
+          description
+            "The date and time of the last update of this mac";
+        }
+        leaf not-programmed-reason {
+          srl-exts:show-importance "high";
+          type enumeration {
+            enum mac-limit;
+            enum failed-on-slots;
+            enum no-destination-index;
+            enum reserved;
+          }
+          description
+            "The reason why the mac is not programmed";
+        }
+        leaf-list failed-slots {
+          srl-exts:show-importance "high";
+          type uint8 {
+            range "1..16";
+          }
+          description
+            "The list of slot IDs corresponding to the linecards that did not successfully program the mac";
+        }
+      }
+      description
+        "Enter the mac-table context";
+    }
+  }
+
+  grouping srv6-unicast-bridge-table-statistics-top {
+    container statistics {
+      config false;
+      leaf active-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of entries that are active on the sub-interface";
+        srl-exts:show-importance "high";
+      }
+      leaf total-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, active and inactive, on the sub-interface";
+        srl-exts:show-importance "high";
+      }
+      leaf failed-entries {
+        type srl-comm:zero-based-counter64;
+        description
+          "The total number of macs, which have not been programmed on atleast one slot";
+        srl-exts:show-importance "high";
+      }
+      list mac-type {
+        key "type";
+        description
+          "the type of the mac on the sub-interface.";
+        leaf type {
+          type srl-comm:mac-type;
+          srl-exts:show-importance "high";
+        }
+        leaf active-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of entries of this type on the sub-interface";
+          srl-exts:show-importance "high";
+        }
+        leaf total-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, active and inactive, on the sub-interface";
+          srl-exts:show-importance "high";
+        }
+        leaf failed-entries {
+          type srl-comm:zero-based-counter64;
+          description
+            "The total number of macs of this type, which have not been programmed on atleast one slot";
+          srl-exts:show-importance "high";
+        }
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping srv6-instance-bridge-table-unicast-destinations-destination-top {
+    list destination {
+      config false;
+      key "tep sid";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP)";
+      }
+      leaf sid {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "SRv6 Segment Identifier of the destination";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this srv6 destination object (system allocated)";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+        }
+        description
+          "The reason why the srv6 destination is not programmed";
+      }
+      uses srv6-unicast-bridge-table-statistics-top;
+      uses srv6-instance-bridge-table-mac-table-top;
+    }
+  }
+
+  grouping srv6-instance-bridge-table-es-destination-next-hops-top {
+    list destination {
+      config false;
+      key "tep sid";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP)";
+      }
+      leaf sid {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "SRv6 Segment Identifier of the destination";
+      }
+    }
+  }
+
+  grouping srv6-instance-bridge-table-unicast-destinations-es-destination-top {
+    list es-destination {
+      config false;
+      key "esi";
+      leaf esi {
+        type srl-comm:esi;
+        srl-exts:show-importance "high";
+        description
+          "The 10-byte Ethernet Segment Identifier of the ethernet segment.
+           ESI-0 or MAX-ESI values are not allowed.";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this srv6 destination object (system allocated)";
+      }
+      uses srv6-instance-bridge-table-es-destination-next-hops-top;
+      uses srv6-unicast-bridge-table-statistics-top;
+      uses srv6-instance-bridge-table-mac-table-top;
+    }
+  }
+
+  grouping srv6-instance-bridge-table-unicast-destinations-top {
+    container unicast-destinations {
+      config false;
+      uses srv6-instance-bridge-table-unicast-destinations-destination-top;
+      uses srv6-instance-bridge-table-unicast-destinations-es-destination-top;
+      description
+        "Enter the unicast-destinations context";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-segm-rout:segment-routing/srl-srv6-inst:srv6/srl-srv6-inst:instance/srl-srv6-inst:bridge-table" {
+    uses srv6-instance-bridge-table-unicast-destinations-top;
+  }
+}

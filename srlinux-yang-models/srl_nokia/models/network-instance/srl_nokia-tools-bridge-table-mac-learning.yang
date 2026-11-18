@@ -1,0 +1,68 @@
+module srl_nokia-tools-bridge-table-mac-learning {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac-learn:tools-bridge-table-mac-learning";
+  prefix srl-tool-brid-tbl-mac-lear;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for network-instance bridge-table mac learning operational commands
+
+     Copyright 2020-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+
+  grouping tools-bridge-table-mac-learning-top {
+    container mac-learning {
+      presence "bridge table mac learning";
+      leaf delete-all-macs {
+        type empty;
+        description
+          "Delete all learnt mac entries.";
+      }
+      container learnt-entries {
+        list mac {
+          key "address";
+          description
+            "macs learnt on the bridging instance";
+          leaf address {
+            type srl-comm:mac-address;
+          }
+          leaf delete-mac {
+            type empty;
+            description
+              "delete the learnt mac address.";
+          }
+        }
+        description
+          "Enter the learnt-entries context";
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:bridge-table" {
+    uses tools-bridge-table-mac-learning-top;
+  }
+}

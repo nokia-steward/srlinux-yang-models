@@ -1,0 +1,281 @@
+module srl_nokia-system-protocols-mgmt-stp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:stp:system-protocols-mgmt-stp";
+  prefix srl-sys-prot-mgmt-stp;
+
+  import srl_nokia-stp-types {
+    prefix srl-stp-type;
+  }
+  import srl_nokia-stp-common {
+    prefix srl-stp-comm;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-system-network-instance {
+    prefix srl-sys-netinst;
+  }
+  import srl_nokia-interfaces-bridge-table-stp {
+    prefix srl-ifs-brid-tbl-stp;
+  }
+  import srl_nokia-interfaces-l2cp {
+    prefix srl-ifs-l2cp;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file provides Mgmt-Stp configuration under system protocols
+
+     Copyright 2025-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+
+  grouping mst-instance-state {
+    leaf regional-root {
+      config false;
+      type string;
+      description
+        "The bridge identifier of the regional root determined by the Mst Instance STP";
+    }
+    leaf internal-root-cost {
+      config false;
+      type int32;
+      description
+        "The cost of the path to the regional root bridge as seen from this bridge";
+    }
+    leaf remaining-hop-count {
+      config false;
+      type int32;
+      description
+        "The value specifies the remaining number of hops.";
+    }
+    leaf root-port {
+      config false;
+      type int32;
+      description
+        "The port number of port which offers the lowest cost path from this bridge to the regional root bridge.";
+    }
+  }
+
+  grouping mst-instance-interface-state {
+    leaf oper-mst-port-priority {
+      config false;
+      type srl-stp-type:port-priority-type;
+      description
+        "Mst instance interface stp operational Port Priority";
+    }
+    uses srl-ifs-brid-tbl-stp:interface-stp-state;
+  }
+
+  grouping mst-instance-config {
+    description
+      "Top level grouping for mstp instances";
+    list mst-instance {
+      key "mst-id";
+      description
+        "List of the mstp instances";
+      must "(../mode='mstp')" {
+        error-message "Mst-instance config only valid for mode mstp";
+      }
+      leaf mst-id {
+        type uint8 {
+          range "1..15";
+        }
+        description
+          "In an MSTP Bridge, an MSTID, is used to identify a multiple-spanning-tree-instance.";
+      }
+      leaf mst-priority {
+        type srl-stp-type:bridge-priority-type;
+        default "32768";
+        description
+          "Priority component of the Bridge Identifier";
+      }
+      leaf-list vlan-range {
+        type string {
+          pattern '^(409[0-4]|40[0-8][0-9]|[1-3][0-9]{3}|[1-9][0-9]{1,2}|[1-9])\.\.(409[0-4]|40[0-8][0-9]|[1-3][0-9]{3}|[1-9][0-9]{1,2}|[1-9])$';
+        }
+        description
+          " An inclusive range mapped to the MST instance specified as x..y where x and y are valid VLAN IDs (1 <= vlan-id <= 4094)";
+      }
+      uses mst-instance-state;
+    }
+  }
+
+  grouping mgmg-stp-interfaces-state {
+    uses srl-ifs-brid-tbl-stp:interface-stp-config;
+    uses srl-ifs-brid-tbl-stp:interface-stp-state;
+    uses srl-ifs-brid-tbl-stp:interface-stp-bpdu-guard-state;
+    uses srl-ifs-brid-tbl-stp:interface-stp-counters;
+    leaf inside-region {
+      config false;
+      type boolean;
+      description
+        "Indicates if Mst instance interface is inside MST region";
+    }
+  }
+
+  grouping mgmt-stp-interfaces-config {
+    description
+      "Grouping containing configuration and state for interfaces managed by Mgmt-Stp";
+    list interface {
+      key "interface-name";
+      unique "interface-ref/interface";
+      description
+        "List of Interfaces to be managed by Mgmt-Stp";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "Administratively enable or disable the Mgmt-STP protocol interface";
+      }
+      leaf interface-name {
+        type string {
+          length "1..255";
+        }
+        description
+          "Name of the MSTP interface";
+      }
+      container interface-ref {
+        if-feature "srl-feat:interface-references";
+        description
+          "Enter the interface-ref context
+
+           Reference to an interface";
+        leaf interface {
+          type leafref {
+            path "/srl-ifs:interface/srl-ifs:name";
+          }
+          must 'not(/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:ethernet/srl-ifs:l2cp-transparency/srl-ifs-l2cp:tunnel-all-l2cp)' {
+            error-message "STP and tunnel-all-l2cp cannot be enabled on the same interface";
+          }
+          must 'not(/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:ethernet/srl-ifs:l2cp-transparency/srl-ifs-l2cp:xstp/srl-ifs-l2cp:tunnel)' {
+            error-message "STP and xSTP tunnel cannot be enabled on the same interface";
+          }
+          must 'not (/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:ethernet/srl-ifs:aggregate-id)' {
+            error-message "Lag interfaces are not supported as mgmt-stp interfaces";
+          }
+          must "not (starts-with(/srl-ifs:interface[srl-ifs:name=current()]/srl-ifs:name,'irb'))" {
+            error-message "IRB interfaces are not supported as mgmt-stp interfaces";
+          }
+          description
+            "Reference to a base interface";
+        }
+      }
+      uses mgmg-stp-interfaces-state;
+      list mst-instance {
+        key "mst-id";
+        description
+          "List of the mstp instances";
+        leaf mst-id {
+          type leafref {
+            path "../../../mst-instance/mst-id";
+          }
+          description
+            "In an MSTP Bridge, an MST-ID, is used to identify a multiple-spanning-tree-instance";
+        }
+        leaf mst-path-cost {
+          type srl-stp-type:path-cost-type;
+          default "10";
+          description
+            "Indicates the path cost of the interface";
+        }
+        leaf mst-port-priority {
+          type srl-stp-type:port-priority-type;
+          default "128";
+          description
+            "Indicates the port priority of the interface";
+        }
+        uses mst-instance-interface-state;
+      }
+    }
+  }
+
+  grouping system-protocols-mgmt-stp-top {
+    description
+      "Top-level grouping containing a list of management Stp instances.";
+    list mgmt-stp {
+      max-elements 16;
+      key "name";
+      description
+        "Management Stp Instance configured on the local system";
+      leaf name {
+        type srl-comm:restricted-name;
+        description
+          "A unique name identifying the mgmt-stp-instance";
+      }
+      leaf mode {
+        type srl-stp-type:protocol-mode-type;
+        default "mstp";
+        description
+          "Protocol Mode Supported";
+      }
+      uses srl-stp-comm:stp-common-config;
+      leaf mst-name {
+        type string {
+          length "1..32";
+        }
+        description
+          "The Configuration Name in the MST Configuration Identifier";
+      }
+      leaf mst-revision {
+        type uint32 {
+          range "0..65535";
+        }
+        default "0";
+        description
+          "The Revision Level in the MST Configuration Identifier";
+      }
+      leaf mst-max-hops {
+        type uint8 {
+          range "1..255";
+        }
+        default "20";
+        description
+          "The max hop determines the number of bridges in an MST region that a BPDU can traverse before it is discarded";
+      }
+      uses srl-stp-comm:stp-common-state;
+      uses srl-stp-comm:stp-common-events;
+      uses mst-instance-config;
+      uses mgmt-stp-interfaces-config;
+    }
+  }
+
+  augment "/srl-sys:system/srl-sys-netinst:network-instance/srl-sys-netinst:protocols" {
+    uses system-protocols-mgmt-stp-top {
+      if-feature "srl-feat:stp";
+    }
+  }
+}

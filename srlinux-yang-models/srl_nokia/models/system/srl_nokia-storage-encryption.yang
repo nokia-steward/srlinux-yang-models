@@ -1,0 +1,104 @@
+module srl_nokia-storage-encryption {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:system:storage-encryption";
+  prefix srl-stor-encr;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines operational commands related to system storage encryption.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping storage-encryption-top {
+    container storage-encryption {
+      config false;
+      description
+        "Enter the storage-encryption context
+
+         Top-level container for operational commands related to system storage encryption.";
+      container primary-secret {
+        description
+          "Enter the primary-secret context
+
+           Operational commands for the primary secret used for storage encryption.";
+        leaf present {
+          type boolean;
+          description
+            "Indicates whether the primary secret has been configured.
+
+             When false, no primary secret exists yet (for example on a freshly
+             installed system); when true, a primary secret is already set.";
+        }
+        leaf last-changed {
+          type srl-comm:date-and-time-delta;
+          description
+            "The date and time when the primary secret was last configured";
+        }
+        action set-secret {
+          srl-exts:telemetry-capability "unsupported";
+          description
+            "Execute the set-secret action
+
+             Set or change the primary secret
+
+             To change an existing primary secret, provide the current value in current-secret.";
+          input {
+            leaf current-secret {
+              srl-exts:prompt-value "once";
+              srl-exts:hidden-value;
+              srl-exts:prompt-when "../present";
+              type string {
+                length "12..128" {
+                  error-message "primary secret must be between 12 and 128 characters";
+                }
+              }
+              description
+                "The current primary secret";
+            }
+            leaf new-secret {
+              srl-exts:prompt-value "twice";
+              srl-exts:hidden-value;
+              mandatory true;
+              type string {
+                length "12..128" {
+                  error-message "primary secret must be between 12 and 128 characters";
+                }
+              }
+              description
+                "The new primary secret";
+            }
+          }
+          srl-exts:implicit-input "username";
+        }
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    if-feature "srl-feat:central-security-module";
+    uses storage-encryption-top;
+  }
+}

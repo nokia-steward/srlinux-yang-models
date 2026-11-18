@@ -1,0 +1,115 @@
+module srl_nokia-tools-bgp-origin-validation {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:net-inst:tools-bgp-origin-validation";
+  prefix srl-tool-bgp-orig-vali;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+  import srl_nokia-tools-bgp {
+    prefix srl-tool-bgp;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "YANG model for BGP RPKI origin-validation operational (tools)
+     commands.
+
+     This module adds an on-demand origin-validation lookup command
+     under the BGP tools tree:
+
+       tools network-instance <ni> protocols bgp origin-validation
+             match <prefix> origin-as <as-number>
+
+     Given a route prefix and a candidate origin AS, the command asks
+     the BGP process to evaluate the RPKI origin-validation state
+     (valid / invalid / not-found) of that (prefix, origin-AS) pair
+     against the local ROA database -- without requiring a matching
+     route to actually be present in any Adj-RIB-In. It is the
+     operational counterpart of the per-route origin-validation-state
+     surfaced in the RIB and of the origin-validation statistics.
+
+     Process binding: unlike srl_nokia-tools-bgp-rpki (which is owned
+     by rpki_mgr because it drives RPKI-RTR session/ROA-database
+     operations), this module is owned by bgp_mgr and is registered in
+     bgp_mgr_config.yml. It augments the tools-only network-instance
+     tree (srl_nokia-tools-network-instance) under the tools-bgp
+     container so the path shape mirrors the config/state path
+     (/network-instance/protocols/bgp/...). Because the augmented
+     origin-validation container has the same owning application as its
+     parent bgp tools container (bgp_mgr) and introduces no list keys,
+     it is not a separate mgmt-server delivery node: its leaves fold
+     into the existing bgp tools delivery node and are handled by the
+     bgp_mgr tools handler (the same path as reset-peer / soft-clear).
+
+     Modeled in a dedicated module, separate from srl_nokia-tools-bgp,
+     to keep the RPKI origin-validation surface self-contained and
+     gated behind the bgp-rpki-origin-validation feature, mirroring how
+     the config/state origin-validation surface lives in its own
+     srl_nokia-bgp-origin-validation.yang module.
+
+     Gated by the bgp-rpki-origin-validation feature flag.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping origin-validation-tools-top {
+    container origin-validation {
+      presence "Perform an on-demand RPKI origin-validation lookup";
+      description
+        "Enter the origin-validation context
+
+         On-demand RPKI origin-validation lookup, handled by the BGP
+         manager process. Evaluates the origin-validation state (valid,
+         invalid or not-found) of an arbitrary (prefix, origin-AS) pair
+         against the local ROA database. Both match and origin-as must
+         be supplied. This is a read-only operation: it does not modify
+         the ROA database, any route, or any statistics.";
+      leaf match {
+        type srl-comm:ip-prefix;
+        description
+          "The route prefix (IPv4 or IPv6, in address/length form) to
+           evaluate against the local ROA database
+
+           This is the prefix whose origin-validation state should be
+           computed. It does not need to correspond to a route that is
+           currently present in any Adj-RIB-In; the lookup is performed
+           directly against the ROA database. Must be specified together
+           with origin-as.";
+      }
+      leaf origin-as {
+        type srl-comm:as-number;
+        description
+          "The candidate origin autonomous system number to validate the
+           prefix against
+
+           The lookup compares this origin AS and the prefix length of
+           match against the matching ROA entries: the result is valid
+           when a covering ROA authorizes this origin AS at an acceptable
+           max-length, invalid when a covering ROA exists but the origin
+           AS or prefix length is not authorized, and not-found when no
+           covering ROA exists. Must be specified together with match.";
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:protocols/srl-tool-bgp:bgp" {
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses origin-validation-tools-top;
+  }
+}

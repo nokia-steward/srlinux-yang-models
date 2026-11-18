@@ -1,0 +1,138 @@
+module srl_nokia-system-multicast {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:general:system-multicast";
+  prefix srl-sys-mult;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines system multicast and operational state data.
+
+     Copyright 2023-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+
+  typedef multicast-id-user-type {
+    type enumeration {
+      enum mac-vrf {
+        value 1;
+      }
+      enum vxlan-interface {
+        value 2;
+      }
+      enum l2-proxy-arp-nd {
+        value 3;
+      }
+      enum mfib {
+        value 4;
+      }
+      enum mac-vrf-bgp-evpn {
+        value 5;
+      }
+      enum mldp {
+        value 6;
+      }
+      enum static-lsp {
+        value 7;
+      }
+      enum mfib-secondary {
+        value 8;
+      }
+    }
+    description
+      "type of multicast ids users in the system";
+  }
+
+  grouping multicast-id-usage-common {
+    leaf current-usage {
+      type srl-comm:zero-based-counter64;
+      description
+        "The total number of multicast ids that are in use on the system.";
+      srl-exts:show-importance "high";
+    }
+    leaf total-pending {
+      type srl-comm:zero-based-counter64;
+      description
+        "The total number of multicast ids pending allocation on the system.";
+      srl-exts:show-importance "high";
+    }
+  }
+
+  grouping multicast-id-usage-top {
+    container statistics {
+      config false;
+      leaf maximum-ids {
+        config false;
+        type int32;
+        description
+          "Maximum number of multicast ids available in the system.";
+      }
+      uses multicast-id-usage-common;
+      list multicast-id-user-type {
+        key "user";
+        description
+          "the type of the user of multicast id in the system.";
+        leaf user {
+          type multicast-id-user-type;
+          srl-exts:show-importance "high";
+        }
+        uses multicast-id-usage-common;
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping multicast-id-top {
+    container multicast-ids {
+      description
+        "Enter the multicast-ids context
+
+         system multicast id information";
+      uses multicast-id-usage-top;
+    }
+  }
+
+  grouping multicast-top {
+    container multicast {
+      description
+        "Enter the multicast context
+
+         system multicast information";
+      uses multicast-id-top;
+    }
+  }
+
+  augment "/srl-sys:system" {
+    uses multicast-top;
+  }
+}

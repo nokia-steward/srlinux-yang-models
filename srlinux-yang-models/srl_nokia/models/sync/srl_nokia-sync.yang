@@ -1,0 +1,109 @@
+module srl_nokia-sync {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:time:sync";
+  prefix srl-sync;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-sync-ptp {
+    prefix srl-sync-ptp;
+  }
+  import srl_nokia-sync-freq {
+    prefix srl-sync-freq;
+  }
+  import srl_nokia-sync-interfaces {
+    prefix srl-sync-ifs;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+  revision 2022-06-30 {
+    description
+      "SR Linux 22.6.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+
+  grouping sync-top {
+    container sync {
+      if-feature "srl-feat:sync";
+      description
+        "Enter the sync context
+
+         Context to configure sync parameters and report sessions state";
+      container freq-references {
+        uses srl-sync-freq:freq-references-top;
+        description
+          "Enter the freq-references context";
+      }
+      container freq-clock {
+        uses srl-sync-freq:freq-clock-top;
+        description
+          "Enter the freq-clock context";
+      }
+      container ptp {
+        uses srl-sync-ptp:ptp-instance-top;
+        description
+          "Enter the ptp context";
+      }
+      container gnss {
+        if-feature "srl-feat:sync-gnss";
+        uses srl-sync-ifs:gnss-interface-top;
+        description
+          "Enter the gnss context";
+      }
+      container one-pps {
+        if-feature "srl-feat:sync-one-pps";
+        uses srl-sync-ifs:one-pps-interface-top;
+        description
+          "Enter the one-pps context";
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    if-feature "srl-feat:sync";
+    uses sync-top;
+  }
+}

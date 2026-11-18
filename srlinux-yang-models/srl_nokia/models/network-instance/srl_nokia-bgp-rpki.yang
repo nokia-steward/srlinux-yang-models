@@ -1,0 +1,960 @@
+module srl_nokia-bgp-rpki {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:bgp:rpki";
+  prefix srl-bgp-rpki;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-bgp {
+    prefix srl-bgp;
+  }
+  import srl_nokia-bgp-rpki-types {
+    prefix srl-bgp-rpki-type;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Configuration and operational state for BGP RPKI-RTR cache server
+     sessions and statically configured ROA entries.
+
+     RPKI (Resource Public Key Infrastructure) Origin Validation
+     validates that the AS announcing a BGP route is authorized to
+     originate that prefix. Validation uses Route Origin Authorization
+     (ROA) objects received from RPKI cache servers via the
+     RPKI-to-Router protocol (RFC 8210, RFC 6811).
+
+     Scope of this module (owned by rpkimgr process):
+     - RPKI-RTR cache server session configuration and operational state,
+       including per-session ROA entry lists, entry-state (active/stale),
+       per-session ROA entry counters, and protocol statistics.
+     - Statically configured ROA entries that take precedence over
+       dynamically received entries.
+     - The rpki presence container and its single augment under
+       .network-instance.protocols.bgp.
+     - RPKI sessions are restricted to the default network-instance via
+       a must statement. The TCP connection may optionally be routed
+       over a different network-instance (e.g. the management ip-vrf).
+
+     The per-session roa-entries container under each session state
+     container is the authoritative YANG representation of the ROA
+     database and is split into ipv4 and ipv6 sub-containers so a
+     query for one AFI never enumerates entries of the other. An
+     aggregate view is additionally exposed under the rpki container
+     itself at rpki/roa-entries/{ipv4,ipv6}/roa-entry, which merges
+     the per-session dynamic entries with the static-roa entries in
+     prefix key order and is served directly from the panos merged
+     ROA database walk. The aggregate view is what the operator
+     `show ... rpki roa-database ipv{4,6}` command consumes; the
+     per-session view remains available for per-session gNMI
+     subscribers.
+
+     Shutting down a BGP instance or network-instance BGP protocol
+     does not affect RPKI-RTR sessions or the ROA database. RPKI state
+     is maintained independently by rpkimgr to prevent churn when
+     multiple VRFs share RPKI infrastructure or when BGP is restarted.
+
+     Related modules:
+     - srl_nokia-bgp-rpki-types.yang: shared type definitions.
+     - srl_nokia-bgp-origin-validation.yang: BGP-process-owned module
+       covering origin-validation enablement, best path selection knobs,
+       and per-AFI-SAFI statistics.
+
+     All augments in this module are gated by the
+     bgp-rpki-origin-validation feature flag.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping rpki-session-config {
+    description
+      "Configuration leaves for an RPKI-RTR cache server session";
+    leaf name {
+      type srl-comm:name;
+      must ". != '--'" {
+        error-message
+          "The session name '--' is reserved as the sentinel used for
+           static entries in the aggregate rpki/roa-entries state list";
+      }
+      description
+        "Administrative name for this RPKI-RTR session
+
+         Used as the list key and as a human-readable label in
+         operational state output and syslog events.
+
+         The literal string '--' is reserved as the sentinel that
+         identifies static entries in the aggregate rpki/roa-entries
+         state list and is therefore rejected here.";
+    }
+    leaf admin-state {
+      type srl-comm:admin-state;
+      default "enable";
+      description
+        "Administrative state of this RPKI-RTR session
+
+         When set to disable, the TCP connection is torn down and no new
+         connection attempts are made. The session enters the cleanup state
+         and all ROA entries received from this cache server are immediately
+         purged from the ROA database. The session transitions to idle
+         once cleanup completes.
+
+         This differs from a session clear tools command, which also
+         purges entries immediately but does not enter the cleanup state
+         and triggers an automatic reconnect attempt.";
+    }
+    leaf description {
+      type srl-comm:description;
+      description
+        "Operator-provided description for this RPKI-RTR session
+
+         Free-form text for administrative reference. Does not
+         affect session behavior.";
+    }
+    leaf cache-server {
+      type srl-comm:ip-address;
+      mandatory true;
+      description
+        "IP address of the RPKI cache server
+
+         Supports both IPv4 and IPv6 addresses. The address must
+         be reachable from the configured network-instance.";
+    }
+    leaf port {
+      type srl-comm:port-number;
+      default "323";
+      description
+        "TCP port number of the RPKI cache server
+
+         The IANA-assigned well-known port for RPKI-RTR is 323.
+         Non-standard ports may be configured if the cache server
+         is deployed on an alternate port.";
+    }
+    leaf local-address {
+      type srl-comm:ip-address;
+      description
+        "Source IP address for the TCP connection to the cache server
+
+         When not configured, the system selects the source address
+         based on routing in the configured network-instance. Explicit
+         configuration may be required when the cache server enforces
+         source-address-based access control.";
+    }
+    leaf network-instance {
+      type leafref {
+        path "/srl-netinst:network-instance/srl-netinst:name";
+      }
+      default "default";
+      must "/srl-netinst:network-instance[srl-netinst:name = current()]/srl-netinst:type = 'srl-netinst:default' or /srl-netinst:network-instance[srl-netinst:name = current()]/srl-netinst:type = 'srl-netinst:ip-vrf'" {
+        error-message "RPKI-RTR session network-instance must be of type default or ip-vrf";
+      }
+      description
+        "Network-instance used to route the TCP connection to the cache server
+
+         Allows the cache server TCP connection to be established via a
+         different network-instance than the one where BGP is running.
+         A common deployment is to reach the RPKI cache server via the
+         management network-instance (type ip-vrf) while BGP runs in
+         the default network-instance.
+
+         Only network-instances of type default or ip-vrf are permitted.
+
+         Defaults to 'default' so the [cache-server network-instance]
+         uniqueness constraint on the session list is well-defined even
+         when this leaf is left unconfigured.";
+    }
+    leaf stale-time {
+      type uint32 {
+        range "1..262144";
+      }
+      units "seconds";
+      default "3600";
+      description
+        "Duration that ROA entries remain valid after the session goes down
+
+         When the RPKI-RTR session is lost, all ROA entries received
+         from this cache server are marked stale. If the session is not
+         re-established before stale-time expires, the stale entries
+         are purged from the ROA database and affected BGP routes are
+         re-evaluated.
+
+         The extended upper range of 262144 seconds (approximately 3 days)
+         provides resilience during prolonged cache server outages,
+         preventing premature removal of ROA data that would cause
+         valid routes to transition to not-found.";
+    }
+    leaf hold-time {
+      type uint32 {
+        range "10..3600";
+      }
+      units "seconds";
+      default "600";
+      must 'current() >= (../refresh-time * 2)' {
+        error-message "hold-time must be at least twice refresh-time";
+      }
+      description
+        "Duration after which the session is declared down if no messages
+         are received from the cache server
+
+         The hold timer is reset on receipt of any RPKI-RTR PDU from
+         the cache server. If the timer expires, the session transitions
+         to idle and reconnection begins after connect-retry expires.
+         Configured locally per RFC 6810; not negotiated with the cache server.
+
+         Must be at least twice refresh-time, so that at least one
+         refresh cycle can complete before the hold timer would expire.
+         This mirrors the equivalent constraint enforced on SR OS.";
+    }
+    leaf refresh-time {
+      type uint32 {
+        range "10..3600";
+      }
+      units "seconds";
+      default "300";
+      description
+        "Interval at which Serial Query PDUs are sent to the cache server
+
+         Controls how frequently the router polls the cache server for
+         incremental ROA database updates when the session is established
+         and no Serial Notify has been received. Configured locally per
+         RFC 6810; not negotiated with the cache server.
+
+         hold-time must be at least twice this value; see the must
+         constraint on hold-time.";
+    }
+    leaf connect-retry {
+      type uint32 {
+        range "10..3600";
+      }
+      units "seconds";
+      default "120";
+      description
+        "Interval between TCP connection retry attempts to the cache server
+
+         After a session goes down or a connection attempt fails, the
+         router waits connect-retry seconds before making the next
+         connection attempt.";
+    }
+    container trace-options {
+      presence "Enable RPKI-RTR PDU trace-options for this session";
+      description
+        "Per-session debug trace options for RPKI-RTR PDU processing on
+         this cache-server session
+
+         Configure either the aggregate 'all' leaf or one or more of the
+         per-PDU 'flag' entries. The two forms are mutually exclusive at
+         the schema level. Traced PDUs are logged at debug severity under
+         the rpki logging subsystem identity; the rpki subsystem must
+         separately be enabled at debug severity in /system/logging for
+         traces to appear in a log file.";
+      choice packet-selection {
+        description
+          "All-PDUs form vs per-PDU form. Only one branch may be active
+           at a time.";
+        case all {
+          leaf all {
+            type empty;
+            description
+              "Trace every RPKI-RTR PDU type sent or received on this
+               session
+
+               Cannot be combined with the per-PDU flag list.";
+          }
+        }
+        case per-type {
+          leaf-list flag {
+            type enumeration {
+              enum serial-notify {
+                description
+                  "Serial Notify PDUs (RFC 6810 Section 5.6)";
+              }
+              enum serial-query {
+                description
+                  "Serial Query PDUs (RFC 6810 Section 5.3)";
+              }
+              enum reset-query {
+                description
+                  "Reset Query PDUs (RFC 6810 Section 5.4)";
+              }
+              enum cache-response {
+                description
+                  "Cache Response PDUs (RFC 6810 Section 5.5)";
+              }
+              enum cache-reset {
+                description
+                  "Cache Reset PDUs (RFC 6810 Section 5.9)";
+              }
+              enum end-of-data {
+                description
+                  "End of Data PDUs (RFC 6810 Section 5.8)";
+              }
+              enum ipv4-prefix {
+                description
+                  "IPv4 Prefix PDUs (RFC 6810 Section 5.6)";
+              }
+              enum ipv6-prefix {
+                description
+                  "IPv6 Prefix PDUs (RFC 6810 Section 5.7)";
+              }
+              enum error-report {
+                description
+                  "Error Report PDUs (RFC 6810 Section 5.10)";
+              }
+            }
+            description
+              "Per-PDU-type tracing
+
+               One or more flags may be set simultaneously. Present only
+               when the 'all' leaf is not configured.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping rpki-session-state {
+    description
+      "Operational state for an RPKI-RTR session.
+
+       Summary operational fields (session-state, uptime, counters,
+       and protocol statistics) are grouped under a state container,
+       separate from the roa-entries container defined below. This
+       lets info from state on a session return just the summary
+       fields via the explicit state path, without requiring a full
+       walk of the (potentially very large) roa-entries list -
+       consistent with how BGP keeps adj-rib-in state outside of the
+       neighbor subtree.";
+    container state {
+      config false;
+      description
+        "Enter the state context
+
+         Summary operational state for this RPKI-RTR session.";
+      leaf session-state {
+        type srl-bgp-rpki-type:rpki-session-state;
+        config false;
+        description
+          "Current operational state of the RPKI-RTR session
+
+           Reflects the state machine defined in RFC 6810:
+           idle (no connection), connect (TCP in progress),
+           up (session established and exchanging data),
+           error (protocol error encountered).";
+      }
+      leaf uptime {
+        type srl-comm:date-and-time-delta;
+        config false;
+        description
+          "Time elapsed since the session last transitioned to the up state
+
+           Set when the session is established. Cleared when it goes down.
+           Not present if the session has never reached the up state.";
+      }
+      leaf last-update-time {
+        type srl-comm:date-and-time-delta;
+        config false;
+        description
+          "Time elapsed since the last ROA database update was received
+           from this cache server
+
+           Updated on receipt of every End-of-Data PDU from the cache
+           server, including responses to periodic serial queries that
+           contain no data changes. This means the timestamp advances
+           even when no ROA entries were added or deleted, reflecting
+           that the cache server has confirmed the local database is
+           current as of that serial number.
+
+           Not present if no End-of-Data PDU has been received in the
+           current session lifetime.";
+      }
+      leaf serial-number {
+        type uint32;
+        config false;
+        description
+          "Most recently received serial number from this cache server
+
+           Used to request incremental updates via Serial Query PDUs.
+           A discontinuity in the serial number causes the router to
+           request a full reset and re-synchronization of the ROA database.";
+      }
+      leaf session-id {
+        type uint16;
+        config false;
+        description
+          "Session ID assigned by the cache server
+
+           Used to detect cache server restarts. A change in session ID
+           triggers a full ROA database reset for this session.";
+      }
+      leaf connection-attempts {
+        type uint32;
+        config false;
+        description
+          "Total number of TCP connection attempts made since admin-state
+           was last set to enable
+
+           Incremented on each outbound TCP SYN. Useful for identifying
+           sessions that are repeatedly failing to connect.";
+      }
+      leaf roa-entries-received {
+        type uint32;
+        config false;
+        description
+          "Net number of ROA entries asserted by this cache server at the
+           time the session connection was last lost
+
+           Incremented as IPv4 Prefix and IPv6 Prefix PDUs with flag
+           announce are processed. Decremented when delete announcements
+           are processed during the session lifetime. Reset to zero when
+           the session connection goes down.
+
+           This gives the counter diagnostic value: while the session is
+           down, roa-entries-active remains non-zero (showing stale entries
+           still held) while roa-entries-received is zero, making the
+           difference immediately visible as the stale entry count. When
+           the session is established and synchronized, both counters are
+           equal.
+
+           Provides per-cache accountability for telemetry without
+           requiring enumeration of the full ROA database in YANG state.";
+      }
+      leaf roa-entries-active {
+        type uint32;
+        config false;
+        description
+          "Number of ROA entries from this cache server currently
+           present in the session's entry table, including stale entries
+           whose stale-time has not yet expired
+
+           This counter remains non-zero while a session is down but
+           entries have not been purged. It reaches zero only after
+           stale-time expires and all entries are removed, or after an
+           explicit tools roa-database clear-by-session operation.
+
+           When compared with roa-entries-received, a value of
+           roa-entries-active greater than roa-entries-received indicates
+           entries being held stale pending session re-establishment.
+           Under normal operation with a healthy synchronized session
+           the two values are equal.";
+      }
+      container statistics {
+        config false;
+        description
+          "Enter the statistics context
+
+           RPKI-RTR protocol message counters for this session.
+           All counters are cumulative since admin-state was last set
+           to enable and are not reset on session re-establishment.
+           Counters are reset when admin-state is set to disable or
+           when the cache-server address is changed. Behavior on
+           application restart is TBD pending implementation.";
+        leaf in-messages {
+          type srl-comm:counter64;
+          description
+            "Total RPKI-RTR PDUs received on this session";
+        }
+        leaf out-messages {
+          type srl-comm:counter64;
+          description
+            "Total RPKI-RTR PDUs sent on this session";
+        }
+        leaf errors {
+          type srl-comm:counter64;
+          description
+            "Total RPKI-RTR error PDUs encountered on this session
+
+             Includes error PDUs received from the cache server and
+             error PDUs generated locally due to protocol violations
+             detected on this router.
+
+             Certain error PDU types mandate session teardown per
+             RFC 8210 section 10. An increment of this counter may
+             therefore be correlated with a session-state transition
+             to error or cleanup.
+
+             TCP-level connection failures are not reflected in this
+             counter; those are captured in connection-attempts.";
+        }
+        leaf in-serial-notify {
+          type srl-comm:counter64;
+          description
+            "Serial Notify PDUs received from the cache server
+
+             Each Serial Notify triggers a Serial Query to request
+             incremental ROA updates.";
+        }
+        leaf in-cache-response {
+          type srl-comm:counter64;
+          description
+            "Cache Response PDUs received from the cache server
+
+             Marks the beginning of a cache response cycle following
+             a Serial Query or Reset Query.";
+        }
+        leaf in-cache-reset {
+          type srl-comm:counter64;
+          description
+            "Cache Reset PDUs received from the cache server
+
+             Indicates the cache server cannot satisfy the requested
+             serial number and a full reset is required.";
+        }
+        leaf in-end-of-data {
+          type srl-comm:counter64;
+          description
+            "End of Data PDUs received from the cache server
+
+             Marks the completion of a cache response cycle. The
+             roa-entries-received counter is updated at this point.";
+        }
+        leaf out-serial-query {
+          type srl-comm:counter64;
+          description
+            "Serial Query PDUs sent to the cache server
+
+             Sent periodically at refresh-time intervals and on
+             receipt of a Serial Notify PDU.";
+        }
+        leaf out-reset-query {
+          type srl-comm:counter64;
+          description
+            "Reset Query PDUs sent to the cache server
+
+             Sent when a full ROA database re-synchronization is
+             required, for example after a session ID change or
+             serial number discontinuity.";
+        }
+      }
+    }
+    container roa-entries {
+      srl-exts:telemetry-capability "sample=1";
+      config false;
+      srl-exts:stream-mode "sample=1";
+      description
+        "Enter the roa-entries context
+
+         Per-session ROA entry table for this RPKI-RTR cache server
+
+         Contains the authoritative per-session view of ROA records
+         received from this cache server. This container is a sibling
+         of the session state leaves, not a child of a state container.
+         This separation ensures that queries for session summary state
+         do not enumerate potentially hundreds of thousands of ROA
+         entries inline, consistent with the BGP per-peer rib pattern.
+
+         The container is split by address family into ipv4 and ipv6
+         sub-containers. Each sub-container holds only the entries of
+         its family and uses an AFI-specific prefix key type, so a
+         query targeting one family never traverses entries of the
+         other. This mirrors the ipv4-unicast / ipv6-unicast split
+         used in the IP route tables.
+
+         Static ROA entries are not present in this container; they are
+         visible in the static-roa configuration list. A consolidated
+         view of the full ROA database is obtained by reading the
+         static-roa configuration list first, followed by the ipv4 and
+         ipv6 roa-entry lists under each session sequentially. This
+         reflects the internal per-session storage architecture and is
+         consistent with SR OS.";
+      container ipv4 {
+        description
+          "Enter the ipv4 context
+
+           IPv4 ROA entries received from this cache server";
+        list roa-entry {
+          key "prefix origin-as max-prefix-length";
+          description
+            "A single IPv4 ROA record received dynamically from this
+             cache server
+
+             The composite key [prefix origin-as max-prefix-length]
+             matches the structure of a ROA as defined in RFC 6482.";
+          leaf prefix {
+            type srl-comm:ipv4-prefix;
+            description
+              "IPv4 prefix of this ROA entry
+
+               The prefix-length serves as the minimum prefix-length:
+               routes must be covered by this prefix to match this
+               entry.";
+          }
+          uses rpki-roa-entry-common;
+        }
+      }
+      container ipv6 {
+        description
+          "Enter the ipv6 context
+
+           IPv6 ROA entries received from this cache server";
+        list roa-entry {
+          key "prefix origin-as max-prefix-length";
+          description
+            "A single IPv6 ROA record received dynamically from this
+             cache server
+
+             The composite key [prefix origin-as max-prefix-length]
+             matches the structure of a ROA as defined in RFC 6482.";
+          leaf prefix {
+            type srl-comm:ipv6-prefix;
+            description
+              "IPv6 prefix of this ROA entry
+
+               The prefix-length serves as the minimum prefix-length:
+               routes must be covered by this prefix to match this
+               entry.";
+          }
+          uses rpki-roa-entry-common;
+        }
+      }
+    }
+  }
+
+  grouping rpki-roa-entry-common {
+    description
+      "Leaves common to the ipv4 and ipv6 per-session roa-entry lists.
+       Only the prefix key leaf (and therefore its type) differs
+       between the two AFIs, so the remainder is factored here.";
+    leaf origin-as {
+      type srl-comm:as-number;
+      description
+        "AS number authorized to originate this prefix per this ROA";
+    }
+    leaf max-prefix-length {
+      type uint8;
+      description
+        "Maximum prefix-length the origin AS is authorized to announce
+
+         Routes with a prefix-length exceeding this value are
+         considered invalid even if the origin AS matches.";
+    }
+    leaf entry-state {
+      type enumeration {
+        enum active {
+          description
+            "Entry is current and contributing to BGP origin validation.
+             The session is up and this entry is synchronized with
+             the cache server.";
+        }
+        enum stale {
+          description
+            "Entry is retained after the session went down but has not
+             yet been purged. The entry continues to contribute to BGP
+             origin validation until stale-time expires.
+
+             The delta between roa-entries-active and
+             roa-entries-received reflects the number of stale entries
+             being held for this session.";
+        }
+      }
+      config false;
+      description
+        "Current state of this ROA entry";
+    }
+  }
+
+  grouping rpki-static-roa-config {
+    description
+      "Configuration leaves for a statically defined ROA entry";
+    leaf prefix {
+      type srl-comm:ip-prefix;
+      description
+        "IPv4 or IPv6 prefix for this static ROA entry
+
+         Used as the list key. The prefix-length of this value
+         serves as the minimum prefix-length for the entry.";
+    }
+    leaf max-prefix-length {
+      type uint8;
+      mandatory true;
+      description
+        "Maximum prefix-length the origin AS is authorized to announce
+
+         A received route is valid only if its prefix-length is less
+         than or equal to this value. Mandatory as this leaf forms
+         part of the list key [prefix origin-as max-prefix-length].
+         A value equal to the prefix-length of the prefix leaf
+         expresses a no-deaggregation ROA (exact-length match only).";
+    }
+    leaf origin-as {
+      type srl-comm:as-number;
+      mandatory true;
+      description
+        "AS number that is authorized (or explicitly not authorized)
+         to originate this prefix
+
+         Interpreted according to entry-type: when entry-type is valid,
+         this AS is authorized to originate the prefix. When entry-type
+         is invalid, routes from this AS for this prefix are explicitly
+         marked invalid regardless of any dynamic ROA entries.";
+    }
+    leaf entry-type {
+      type srl-bgp-rpki-type:static-roa-entry-type;
+      mandatory true;
+      description
+        "Whether this static entry asserts a valid or invalid
+         prefix-to-AS binding
+
+         Static entries with entry-type valid behave like a locally
+         injected ROA. Static entries with entry-type invalid allow
+         operators to explicitly mark specific prefix-origin AS
+         combinations as invalid, for example to protect against
+         known mis-originations.
+
+         Static entries take precedence over dynamic entries received
+         from RPKI-RTR cache servers.";
+    }
+  }
+
+  grouping rpki-top {
+    description
+      "Top-level rpki presence container under BGP
+
+       Groups RPKI-RTR session management and static ROA configuration.
+       Creating this container enables the RPKI origin validation
+       feature for this BGP instance.";
+    container rpki {
+      presence "Enable RPKI origin validation for this BGP instance";
+      must "../../../srl-netinst:type = 'srl-netinst:default'" {
+        error-message "RPKI can only be configured in a network-instance of type default";
+      }
+      description
+        "RPKI configuration for BGP origin validation
+
+         Contains RPKI-RTR cache server session management and statically
+         configured ROA entries. RPKI is only supported in the default
+         network-instance.
+
+         The ROA database and origin-validation operational state are
+         maintained under BGP (not inside this container) since BGP is
+         the consumer of the database for validation decisions. See
+         srl_nokia-bgp-origin-validation.yang for those elements.";
+      list session {
+        key "name";
+        max-elements 4;
+        unique "cache-server network-instance";
+        description
+          "RPKI-RTR cache server sessions
+
+           Up to 4 concurrent RPKI-RTR sessions are supported per
+           network-instance. All established sessions contribute
+           concurrently to the merged ROA database; there is no
+           session preference or tie-break mechanism in this release.
+
+           The unique constraint on [cache-server network-instance]
+           prevents configuring two sessions that reach the same cache
+           server via the same network-instance, since such sessions
+           would be functionally redundant and could double-count or
+           conflict over the same ROA feed.";
+        uses rpki-session-config;
+        uses rpki-session-state;
+      }
+      list static-roa {
+        key "prefix origin-as max-prefix-length";
+        description
+          "Statically configured ROA entries
+
+           Static entries are evaluated alongside dynamic entries
+           received from RPKI-RTR cache servers. When a static entry
+           and a dynamic entry exist for the same prefix and origin AS,
+           the static entry takes precedence. Static entries are
+           not subject to stale-time and are never automatically purged.
+
+           The composite key [prefix origin-as max-prefix-length]
+           permits multiple static ROA entries for the same prefix
+           provided they differ in origin-as or max-prefix-length.
+           This supports multi-origin anycast and route transfer
+           scenarios where a single prefix may be legitimately
+           originated by more than one AS.
+
+           max-prefix-length is mandatory as a list key. A value equal
+           to the prefix-length of the prefix leaf expresses a
+           no-deaggregation ROA (exact-length match only).";
+        uses rpki-static-roa-config;
+      }
+      container roa-entries {
+        config false;
+        srl-exts:telemetry-capability "sample=1";
+        description
+          "Enter the roa-entries context
+
+           Aggregate ROA database view for this network-instance's RPKI
+           configuration.
+
+           Contains one entry per (prefix, origin-as, max-prefix-length,
+           source) tuple across all active RPKI-RTR cache-server
+           sessions AND the statically configured static-roa entries.
+           Walk order mirrors the panos merged ROA database: prefix
+           key order across all sources.
+
+           Split by address family into ipv4 and ipv6 sub-containers so
+           a query for one AFI never enumerates entries of the other,
+           matching the ipv4/ipv6 split already used under
+           .../session/<name>/roa-entries.
+
+           Per-session views remain available at
+           .../session/<name>/roa-entries/{ipv4,ipv6}/roa-entry for
+           gNMI subscribers that want per-session feeds; the aggregate
+           view is what the operator-facing 'show ... rpki roa-database
+           ipv{4,6}' command consumes.";
+        container ipv4 {
+          description
+            "Enter the ipv4 context
+
+             Aggregate IPv4 ROA entries";
+          list roa-entry {
+            key "prefix origin-as max-prefix-length session";
+            description
+              "A single aggregated IPv4 ROA entry, dynamic or static.
+
+               Row uniqueness across sources is provided by the
+               session key component: the session name for dynamic
+               entries, the reserved sentinel '--' for entries
+               contributed by the static-roa configuration list.";
+            leaf prefix {
+              type srl-comm:ipv4-prefix;
+              description
+                "IPv4 prefix of this ROA entry.
+
+                 The prefix-length serves as the minimum prefix-length:
+                 routes must be covered by this prefix to match this
+                 entry.";
+            }
+            uses rpki-roa-database-entry-common;
+          }
+        }
+        container ipv6 {
+          description
+            "Enter the ipv6 context
+
+             Aggregate IPv6 ROA entries";
+          list roa-entry {
+            key "prefix origin-as max-prefix-length session";
+            description
+              "A single aggregated IPv6 ROA entry, dynamic or static.
+
+               Row uniqueness across sources is provided by the
+               session key component: the session name for dynamic
+               entries, the reserved sentinel '--' for entries
+               contributed by the static-roa configuration list.";
+            leaf prefix {
+              type srl-comm:ipv6-prefix;
+              description
+                "IPv6 prefix of this ROA entry.
+
+                 The prefix-length serves as the minimum prefix-length:
+                 routes must be covered by this prefix to match this
+                 entry.";
+            }
+            uses rpki-roa-database-entry-common;
+          }
+        }
+      }
+    }
+  }
+
+  grouping rpki-roa-database-entry-common {
+    description
+      "Leaves common to the ipv4 and ipv6 roa-entry lists under the
+       aggregate rpki/roa-entries container. Only the AFI-specific
+       prefix key differs between the two AFIs, so the remainder is
+       factored here.";
+    leaf origin-as {
+      type srl-comm:as-number;
+      description
+        "AS number authorized to originate this prefix per this ROA";
+    }
+    leaf max-prefix-length {
+      type uint8;
+      description
+        "Maximum prefix-length the origin AS is authorized to announce
+
+         Routes with a prefix-length exceeding this value are
+         considered invalid even if the origin AS matches.";
+    }
+    leaf session {
+      type string;
+      description
+        "Session that provided this ROA entry, or the reserved
+         sentinel '--' when the entry came from the static-roa
+         configuration list. Static entries have no owning session;
+         the '--' sentinel makes each combination of (prefix,
+         origin-as, max-prefix-length, source) a distinct list key.
+         Session names that would collide with the sentinel are
+         rejected at configuration time by a must-constraint on
+         rpki-session-config/name.";
+    }
+    leaf entry-type {
+      type enumeration {
+        enum dynamic {
+          description
+            "Received from an RPKI-RTR cache server session";
+        }
+        enum static-valid {
+          description
+            "Statically configured with entry-type valid";
+        }
+        enum static-invalid {
+          description
+            "Statically configured with entry-type invalid";
+        }
+      }
+      config false;
+      description
+        "Source and validity classification of this entry.";
+    }
+    leaf entry-state {
+      type enumeration {
+        enum active {
+          description
+            "Entry is current and contributing to origin validation.";
+        }
+        enum stale {
+          description
+            "Dynamic entry retained after its session went down but
+             whose stale-time has not yet expired. Never present for
+             static entries.";
+        }
+      }
+      config false;
+      description
+        "Runtime state of a dynamic entry. Absent for static entries.";
+    }
+    leaf network-instance {
+      type string;
+      description
+        "Transport network-instance of the session that provided this
+         entry. Absent for static entries.";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp" {
+    description
+      "Add the RPKI session management and static ROA configuration
+       under the BGP protocol container
+
+       This augment is owned by the rpkimgr process. Origin-validation
+       enablement knobs, per-AFI-SAFI statistics, best path selection
+       knobs, and the ROA database state are added by the companion
+       module srl_nokia-bgp-origin-validation.yang, which augments
+       the same and deeper paths and is owned by the BGP process.";
+    if-feature "srl-feat:bgp-rpki-origin-validation";
+    uses rpki-top;
+  }
+}

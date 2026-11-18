@@ -1,0 +1,245 @@
+module srl_nokia-bgp-evpn-bgp-instance-vpws-destinations-remote-ac {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:evpn:bgp-evpn-bgp-instance-vpws-destinations-remote-ac";
+  prefix srl-bgp-evpn-bgp-inst-vpws-dest-remo-ac;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-bgp-evpn {
+    prefix srl-bgp-evpn;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for vpws destinations on the bgp-evpn mpls instance
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+
+  grouping evpn-mpls-vpws-destinations-destination-top {
+    list destination {
+      config false;
+      key "tep evi-label tunnel-id";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP).";
+      }
+      leaf evi-label {
+        type srl-comm:mpls-label-non-reserved;
+        srl-exts:show-importance "high";
+        description
+          "EVI label of the destination.";
+      }
+      leaf tunnel-id {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "tunnel identitier of the destination.";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-mpls destination object (system allocated).";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+        }
+        description
+          "The reason why the evpn-mpls destination is not programmed.";
+      }
+    }
+  }
+
+  grouping evpn-mpls-vpws-destinations-es-destination-next-hops-top {
+    list destination {
+      config false;
+      key "tep evi-label tunnel-id";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP).";
+      }
+      leaf evi-label {
+        type srl-comm:mpls-label-non-reserved;
+        srl-exts:show-importance "high";
+        description
+          "EVI label of this next-hop.";
+      }
+      leaf tunnel-id {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "tunnel identitier of this next-hop.";
+      }
+    }
+  }
+
+  grouping evpn-mpls-vpws-destinations-es-destination-top {
+    list es-destination {
+      config false;
+      key "esi";
+      leaf esi {
+        type srl-comm:esi;
+        srl-exts:show-importance "high";
+        description
+          "The 10-byte Ethernet Segment Identifier of the ethernet segment.
+           ESI-0 or MAX-ESI values are not allowed.";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-mpls destination object (system allocated).";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+        }
+        description
+          "The reason why the evpn-mpls destination is not programmed.";
+      }
+      uses evpn-mpls-vpws-destinations-es-destination-next-hops-top;
+    }
+  }
+
+  grouping evpn-srv6-vpws-destinations-destination-top {
+    list destination {
+      config false;
+      key "tep sid";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP)";
+      }
+      leaf sid {
+        type srl-comm:ipv6-address-unicast;
+        srl-exts:show-importance "high";
+        description
+          "SRv6 Segment Identifier of the destination";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-srv6 destination object (system allocated)";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+        }
+        description
+          "The reason why the evpn-srv6 destination is not programmed";
+      }
+    }
+  }
+
+  grouping evpn-srv6-vpws-destinations-es-destination-next-hops-top {
+    list destination {
+      config false;
+      key "tep sid";
+      leaf tep {
+        srl-exts:show-importance "high";
+        type srl-comm:ip-address;
+        description
+          "The IP address that identifies the remote EVPN Termination Endpoint (TEP)";
+      }
+      leaf sid {
+        type srl-comm:ipv6-address-unicast;
+        srl-exts:show-importance "high";
+        description
+          "SRv6 Segment Identifier of this next-hop";
+      }
+    }
+  }
+
+  grouping evpn-srv6-vpws-destinations-es-destination-top {
+    list es-destination {
+      config false;
+      key "esi";
+      leaf esi {
+        type srl-comm:esi;
+        srl-exts:show-importance "high";
+        description
+          "The 10-byte Ethernet Segment Identifier of the ethernet segment
+
+           ESI-0 or MAX-ESI values are not allowed";
+      }
+      leaf destination-index {
+        type uint64;
+        srl-exts:show-importance "high";
+        description
+          "A system-wide unique identifier of this evpn-mpls destination object (system allocated)";
+      }
+      leaf not-programmed-reason {
+        srl-exts:show-importance "high";
+        type enumeration {
+          enum no-destination-index;
+        }
+        description
+          "The reason why the evpn-srv6 destination is not programmed";
+      }
+      uses evpn-srv6-vpws-destinations-es-destination-next-hops-top;
+    }
+  }
+
+  grouping destinations-top {
+    container destinations {
+      config false;
+      container mpls {
+        uses evpn-mpls-vpws-destinations-destination-top;
+        uses evpn-mpls-vpws-destinations-es-destination-top;
+        description
+          "Enter the mpls context";
+      }
+      container srv6 {
+        uses evpn-srv6-vpws-destinations-destination-top;
+        uses evpn-srv6-vpws-destinations-es-destination-top;
+        description
+          "Enter the srv6 context";
+      }
+      description
+        "Enter the destinations context";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-netinst:bgp-evpn/srl-bgp-evpn:bgp-instance/srl-bgp-evpn:vpws-attachment-circuits/srl-bgp-evpn:remote/srl-bgp-evpn:remote-attachment-circuit" {
+    uses destinations-top;
+  }
+}

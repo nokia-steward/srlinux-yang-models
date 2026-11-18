@@ -1,0 +1,100 @@
+module srl_nokia-tools-grpc {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:grpc:tools-grpc";
+  prefix srl-tool-grpc;
+
+  import srl_nokia-tools-gnoi {
+    prefix srl-tool-gnoi;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-system {
+    prefix srl-tool-sys;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational commands on gRPC server instances
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+
+  grouping grpc-server-top {
+    list grpc-server {
+      description
+        "List of configured gRPC server instances";
+      key "name";
+      leaf name {
+        type srl-comm:name;
+        description
+          "User-provided name of this server instance";
+      }
+      list client {
+        description
+          "List of active gRIBI client sessions";
+        key "id";
+        leaf id {
+          type uint32 {
+            range "0..4294967295";
+          }
+          description
+            "System generated ID for for the client";
+        }
+        leaf disconnect {
+          description
+            "Disconnect this client from the server";
+          type empty;
+        }
+      }
+      container statistics {
+        description
+          "Enter the statistics context
+
+           A collection of counters that were collected by the gRPC during
+           the authentication process.";
+        leaf clear {
+          type empty;
+          description
+            "Clear gNMI network instance authentication counters";
+        }
+      }
+      uses srl-tool-gnoi:tools-gnoi-top {
+        if-feature "not srl-feat:platform-imgmt";
+      }
+    }
+  }
+
+  augment "/srl-tool-sys:system" {
+    srl-exts:first-released "24.3.1";
+    if-feature "srl-feat:grpc-server";
+    uses grpc-server-top;
+  }
+}

@@ -1,0 +1,150 @@
+module srl_nokia-bgp-rpki-types {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:bgp:rpki-types";
+  prefix srl-bgp-rpki-type;
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Type definitions and identities for BGP RPKI Origin Validation
+
+     This module defines enumerations used by srl_nokia-bgp-rpki to
+     represent RPKI-RTR session states, ROA database entry types, and
+     per-route origin validation outcomes per RFC 6811.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  typedef rpki-session-state {
+    type enumeration {
+      enum idle {
+        value 0;
+        description
+          "Session is not established and no connection attempt is in progress";
+      }
+      enum connect {
+        value 1;
+        description
+          "Session is attempting to establish a TCP connection to the cache server";
+      }
+      enum up {
+        value 2;
+        description
+          "Session is established and exchanging data with the cache server";
+      }
+      enum error {
+        value 3;
+        description
+          "Session has encountered a protocol error";
+      }
+      enum cleanup {
+        value 4;
+        description
+          "Session is administratively disabled and stale entries are
+           being purged from the ROA database.
+
+           The session remains in cleanup until all ROA entries received
+           from this cache server have been removed. A subsequent
+           admin-state enable will not initiate a new connection attempt
+           until cleanup completes. If the same cache-server and
+           network-instance combination is assigned to another session,
+           that session waits for this cleanup to finish before
+           attempting its first connection.";
+      }
+    }
+    description
+      "Operational state of an RPKI-RTR session";
+  }
+
+  typedef roa-entry-type {
+    type enumeration {
+      enum static-valid {
+        description
+          "Statically configured as a valid prefix-to-AS binding";
+      }
+      enum static-invalid {
+        description
+          "Statically configured as an invalid prefix-to-AS binding";
+      }
+      enum dynamic {
+        description
+          "Received dynamically from an RPKI-RTR cache server";
+      }
+    }
+    description
+      "Source type of a ROA database entry";
+  }
+
+  typedef static-roa-entry-type {
+    type enumeration {
+      enum valid {
+        description
+          "Static ROA entry expressing a valid prefix-to-AS binding";
+      }
+      enum invalid {
+        description
+          "Static ROA entry expressing an invalid prefix-to-AS binding";
+      }
+    }
+    description
+      "Entry type for statically configured ROA entries";
+  }
+
+  typedef origin-validation-state {
+    type enumeration {
+      enum valid {
+        description
+          "Route matches a ROA entry with correct prefix-length and origin AS";
+      }
+      enum invalid {
+        description
+          "Route matches a ROA entry but prefix-length or origin AS does not match";
+      }
+      enum not-found {
+        description
+          "No matching ROA entry exists for this prefix";
+      }
+      enum disabled {
+        description
+          "Origin validation is not enabled for this route";
+      }
+    }
+    description
+      "Origin validation state of a BGP route per RFC 6811";
+  }
+
+  typedef origin-validation-policy-state {
+    type enumeration {
+      enum valid {
+        description
+          "Route matches a ROA entry with correct prefix-length and origin AS";
+      }
+      enum invalid {
+        description
+          "Route matches a ROA entry but prefix-length or origin AS does not match";
+      }
+      enum not-found {
+        description
+          "No matching ROA entry exists for this prefix";
+      }
+    }
+    description
+      "Origin validation state values usable as a routing-policy match
+       condition.
+
+       This is a configuration-scoped restriction of origin-validation-state
+       and intentionally excludes the 'disabled' enum. 'disabled' describes
+       the absence of a validation outcome on a route with origin validation
+       turned off; it is not a state an operator configures a policy term
+       to match against, and is not supported as a policy match value on
+       SR OS.";
+  }
+}

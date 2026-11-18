@@ -1,0 +1,83 @@
+module srl_nokia-tools-qos-policers {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:qos:tools-qos-policers";
+  prefix srl-tool-qos-poli;
+
+  import srl_nokia-tools-qos {
+    prefix srl-tool-qos;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Copyright 2022-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2023-07-31 {
+    description
+      "SR Linux 23.7.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2022-06-30 {
+    description
+      "SR Linux 22.6.1";
+  }
+
+  grouping tools-policer-policies-top {
+    container policer-policies {
+      leaf clear {
+        type empty;
+      }
+      list policer {
+        description
+          "The list of policer instances belonging to the policer-policy definition";
+        key "policer-id";
+        leaf policer-id {
+          type uint8 {
+            range "0..31";
+          }
+        }
+        leaf clear {
+          type empty;
+        }
+      }
+      description
+        "Enter the policer-policies context";
+    }
+  }
+
+  augment "/srl-tool-qos:qos/srl-tool-qos:interfaces/srl-tool-qos:interface/srl-tool-qos:input" {
+    uses tools-policer-policies-top {
+      if-feature "srl-feat:qos-policer-policies";
+    }
+  }
+}

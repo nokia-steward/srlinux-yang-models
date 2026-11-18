@@ -1,0 +1,101 @@
+module srl_nokia-platform-oam {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:platform-oam";
+  prefix srl-plat-oam;
+
+  import srl_nokia-platform {
+    prefix srl-plat;
+  }
+  import srl_nokia-platform-lc {
+    prefix srl-plat-lc;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines operational state related to OAM resources in the system
+
+     Copyright 2025-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+
+  grouping sat-generator-stream-resources {
+    leaf stream-total {
+      type uint8;
+      description
+        "Total generator streams supported";
+    }
+    leaf stream-allocated {
+      type uint8;
+      description
+        "Active generator streams in use";
+    }
+    leaf stream-free {
+      type uint8;
+      description
+        "Available generator streams";
+    }
+  }
+
+  grouping sat-generator-bandwidth-resources {
+    leaf bandwidth-total-kbps {
+      type uint32;
+      description
+        "Total generator bandwidth supported";
+      units "kbps";
+    }
+    leaf bandwidth-allocated-kbps {
+      type uint32;
+      description
+        "Active generator bandwidth in use";
+      units "kbps";
+    }
+    leaf bandwidth-free-kbps {
+      type uint32;
+      description
+        "Available generator bandwidth";
+      units "kbps";
+    }
+  }
+
+  augment "/srl-plat:platform/srl-plat-lc:linecard/srl-plat-lc:forwarding-complex" {
+    if-feature "srl-feat:service-activation-testhead";
+    container oam {
+      config false;
+      description
+        "Enter the oam context";
+      container resources {
+        description
+          "Enter the resources context
+
+           OAM resources usage and allocation";
+        container service-activation-testhead {
+          description
+            "Enter the service-activation-testhead context
+
+             Service activation generator stream and bandwidth resources";
+          uses sat-generator-stream-resources;
+          uses sat-generator-bandwidth-resources;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,297 @@
+module srl_nokia-acl-qos {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:acl:acl-qos";
+  prefix srl-acl-qos;
+
+  import srl_nokia-acl {
+    prefix srl-acl;
+  }
+  import srl_nokia-qos {
+    prefix srl-qos;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines configuration and operational state data for access control lists (ACL) support of QoS classification conditions and actions.
+
+     Copyright 2022-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+  revision 2025-03-31 {
+    description
+      "SR Linux 25.3.1";
+  }
+  revision 2024-10-31 {
+    description
+      "SR Linux 24.10.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2023-10-31 {
+    description
+      "SR Linux 23.10.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+
+  typedef drop-probability {
+    description
+      "The various drop probability classifications that can be applied to a packet";
+    type enumeration {
+      enum low {
+        description
+          "Traffic that should be dropped last when there is congestion. Internally this is traffic that is
+           colored green.";
+        value 1;
+      }
+      enum medium {
+        description
+          "Traffic that should be dropped before green traffic but after red traffic when there is congestion. Internally this is traffic that is colored yellow.";
+        value 2;
+      }
+      enum high {
+        description
+          "Traffic that should be dropped first when there is congestion. Internally this is traffic that is colored red.";
+        value 3;
+      }
+    }
+  }
+
+  grouping qos-actions {
+    container action {
+      description
+        "Enter the action context
+
+         Container for the actions to be applied to packets matching the classifier entry.";
+      leaf forwarding-class {
+        type leafref {
+          path "/srl-qos:qos/srl-qos:forwarding-classes/srl-qos:forwarding-class/srl-qos:name";
+        }
+        description
+          "The forwarding class to which the DSCP value is mapped";
+      }
+      leaf drop-probability {
+        if-feature "not srl-feat:fpcx";
+        type drop-probability;
+        description
+          "Assign matching packets to the specified drop probability level
+
+           The implicit default, if not specified, is low drop-probability.";
+      }
+      container rewrite {
+        if-feature "not srl-feat:platform-7250-ixr and not srl-feat:platform-7250-ixr-e-unified and not srl-feat:platform-7250-ixr-18e-unified and not srl-feat:platform-7250-ixr-x1b and not srl-feat:platform-7250-ixr-x3b and not srl-feat:fpcx";
+        description
+          "Enter the rewrite context
+
+           Rewrite actions associated with packets that match the classifier entry. Where a packet matches these criteria, the specified rewrite actions should be performed.";
+        leaf set-dscp {
+          type uint8 {
+            range "0..63";
+          }
+          description
+            "Sets the 6-bit DSCP (differentiated services code point) value in the IP packet header.";
+          reference
+            "RFC 2474 - Definition of the Differentiated Services Field (DS Field) in the IPv4 and IPv6 Headers";
+        }
+      }
+      leaf profile {
+        if-feature "srl-feat:fpcx";
+        type srl-comm:classify-profile;
+        description
+          "The profile to which the DSCP value is mapped";
+      }
+    }
+  }
+
+  grouping qos-multifield-classification-criteria {
+    container ipv4 {
+      description
+        "Enter the ipv4 context
+
+         Container for the layer-3 IPv4 match criteria";
+      uses srl-acl:common-acl-filter-entry-match-ipv4-config {
+        refine "destination-ip/prefix-list" {
+          if-feature "srl-feat:acl-qos-ip-prefix-list";
+        }
+        refine "source-ip/prefix-list" {
+          if-feature "srl-feat:acl-qos-ip-prefix-list";
+        }
+      }
+    }
+    container ipv6 {
+      description
+        "Enter the ipv6 context
+
+         Container for the layer-3 IPv6 match criteria";
+      uses srl-acl:common-acl-filter-entry-match-ipv6-config {
+        refine "destination-ip/prefix-list" {
+          if-feature "srl-feat:acl-qos-ip-prefix-list";
+        }
+        refine "source-ip/prefix-list" {
+          if-feature "srl-feat:acl-qos-ip-prefix-list";
+        }
+      }
+    }
+    container transport {
+      description
+        "Enter the transport context
+
+         Container for the layer-4 transport match criteria";
+      uses srl-acl:common-acl-filter-entry-match-layer4-config;
+    }
+  }
+
+  grouping multifield-classification-policies {
+    list multifield-classifier {
+      description
+        "List of multifield-classifier QoS policies";
+      key "name";
+      leaf name {
+        type srl-comm:name;
+        description
+          "The name of multifield-classifier QoS policy";
+      }
+      leaf type {
+        description
+          "Type of the QoS multifield-classifier";
+        mandatory true;
+        type enumeration {
+          enum ipv4 {
+            value 4;
+            description
+              "Multifield-classifier using ipv4-based matching criteria";
+          }
+          enum ipv6 {
+            value 6;
+            description
+              "Multifield-classifier using ipv6-based matching criteria";
+          }
+        }
+      }
+      list entry {
+        description
+          "List of individual QoS multifield-classifier entries";
+        key "sequence-id";
+        leaf sequence-id {
+          type uint32 {
+            range "0..65535";
+          }
+          description
+            "A number to indicate the relative evaluation order of the different terms; lower numbered terms are evaluated before higher numbered terms";
+        }
+        container match {
+          description
+            "Enter the match context
+
+             Matching conditions for QoS multifield-classifier";
+          uses qos-multifield-classification-criteria;
+        }
+        uses qos-actions;
+        uses srl-acl:interface-filter-entry-tcam;
+      }
+    }
+  }
+
+  augment "/srl-qos:qos/srl-qos:classifiers" {
+    uses multifield-classification-policies {
+      refine "multifield-classifier" {
+        if-feature "srl-feat:ip-qos-multifield";
+        if-feature "not srl-feat:fpcx";
+      }
+    }
+  }
+
+  grouping qos-interface-classifiers-config {
+    description
+      "Configuration parameters for the list of classifiers";
+    list classifier {
+      key "type";
+      description
+        "A list of classifiers that should be applied to the interface";
+      leaf name {
+        type leafref {
+          path "/srl-qos:qos/srl-qos:classifiers/srl-acl-qos:multifield-classifier/srl-acl-qos:name";
+        }
+        description
+          "Reference to the classifier to be applied to ingress traffic on
+           the interface";
+        must '/srl-qos:qos/srl-qos:classifiers/srl-acl-qos:multifield-classifier[srl-acl-qos:name = current()]/srl-acl-qos:type = ../type' {
+          error-message "qos classifier type should match with input classifier type";
+        }
+        must "/srl-ifs:interface[srl-ifs:name = current()/../../../../srl-qos:interface-ref/srl-qos:interface]/srl-ifs:subinterface[srl-ifs:index = current()/../../../../srl-qos:interface-ref/srl-qos:subinterface]/srl-ifs:type = 'routed' or
+              /srl-ifs:interface[srl-ifs:name = current()/../../../../srl-qos:interface-ref/srl-qos:interface]/srl-ifs:subinterface[srl-ifs:index = current()/../../../../srl-qos:interface-ref/srl-qos:subinterface]/srl-ifs:type = 'bridged' or
+              not(/srl-ifs:interface[srl-ifs:name = current()/../../../../srl-qos:interface-ref/srl-qos:interface]/srl-ifs:subinterface[srl-ifs:index = current()/../../../../srl-qos:interface-ref/srl-qos:subinterface]/srl-ifs:type)" {
+          error-message "QOS multifield classifier can only be applied on subinterfaces of type bridged or routed";
+          srl-exts:if-feature "srl-feat:ip-qos-multifield-on-bridged-subifs";
+        }
+        must "/srl-ifs:interface[srl-ifs:name = current()/../../../../srl-qos:interface-ref/srl-qos:interface]/srl-ifs:subinterface[srl-ifs:index = current()/../../../../srl-qos:interface-ref/srl-qos:subinterface]/srl-ifs:type = 'routed' or
+              not(/srl-ifs:interface[srl-ifs:name = current()/../../../../srl-qos:interface-ref/srl-qos:interface]/srl-ifs:subinterface[srl-ifs:index = current()/../../../../srl-qos:interface-ref/srl-qos:subinterface]/srl-ifs:type)" {
+          error-message "QOS multifield classifier can only be applied on subinterfaces of type routed";
+          srl-exts:if-feature "not srl-feat:ip-qos-multifield-on-bridged-subifs";
+        }
+      }
+      leaf type {
+        type enumeration {
+          enum ipv4 {
+            value 4;
+            description
+              "Classifier matches IPv4 Unicast packets.";
+          }
+          enum ipv6 {
+            value 6;
+            description
+              "Classifier matches IPv6 Unicast packets.";
+          }
+        }
+        description
+          "Type of packets matched by the classifier.";
+      }
+    }
+  }
+
+  augment "/srl-qos:qos/srl-qos:interfaces/srl-qos:interface/srl-qos:input/srl-qos:classifiers" {
+    if-feature "srl-feat:ip-qos-multifield";
+    if-feature "not srl-feat:fpcx";
+    uses qos-interface-classifiers-config;
+  }
+}

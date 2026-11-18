@@ -1,0 +1,66 @@
+module srl_nokia-if-mpls {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:chassis:if-mpls";
+  prefix srl-if-mpls;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-if-ip {
+    prefix srl-if-ip;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for managing MPLS at a subinterface level
+
+     Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2024-03-31 {
+    description
+      "SR Linux 24.3.1";
+  }
+  revision 2021-06-30 {
+    description
+      "SR Linux 21.6.1";
+  }
+
+  grouping mpls-top {
+    container mpls {
+      config false;
+      if-feature "srl-feat:mpls";
+      must "(../srl-ifs:type != 'srl-ifs:bridged') and (../srl-ifs:type != 'srl-ifs:local-mirror-dest')" {
+        error-message "mpls is not supported on bridged or local-mirror-dest subinterfaces";
+      }
+      description
+        "Enter the mpls context
+
+         Container for MPLS configuration and state at the subinterface level";
+      uses srl-if-ip:subinterface-statistics;
+    }
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface" {
+    uses mpls-top;
+  }
+}

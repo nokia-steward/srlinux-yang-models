@@ -1,0 +1,165 @@
+module srl_nokia-tools-igmp-snooping {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:igmp:tools-igmp-snooping";
+  prefix srl-tool-igmp-snoo;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for IGMP SNOOPING operational commands
+
+     Copyright 2023-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+
+  grouping igmp-snooping-tools-top {
+    container igmp-snooping {
+      if-feature "srl-feat:igmp-snooping";
+      presence "Send operational commands to IGMP manager";
+      container statistics {
+        leaf clear {
+          type empty;
+          description
+            "Reset IGMP SNOOPING statistics for all interfaces";
+        }
+        description
+          "Enter the statistics context";
+      }
+      container membership-groups {
+        leaf clear {
+          type empty;
+          description
+            "Clear all IGMP SNOOPING memberships for all interfaces";
+        }
+        list group {
+          key "group";
+          description
+            "Multicast group membership";
+          leaf group {
+            type srl-comm:ipv4-address;
+            description
+              "Multicast address";
+          }
+          leaf clear {
+            type empty;
+            description
+              "Clear all IGMP SNOOPING memberships for this group on all interfaces";
+          }
+          list source {
+            key "source";
+            description
+              "Source addresses of multicast";
+            leaf source {
+              type srl-comm:ipv4-address;
+              description
+                "Source address of multicast";
+            }
+            leaf clear {
+              type empty;
+              description
+                "Clear all IGMP SNOOPING memberships for this source on all interfaces";
+            }
+          }
+        }
+        description
+          "Enter the membership-groups context";
+      }
+      container querier {
+        leaf clear {
+          type empty;
+          description
+            "Clear all IGMP SNOOPING querier info on all interfaces";
+        }
+        description
+          "Enter the querier context";
+      }
+      list interface {
+        description
+          "List of IGMP SNOOPING interfaces";
+        key "interface-name";
+        leaf interface-name {
+          type srl-comm:subinterface-all;
+          description
+            "Reference to a specific subinterface of the form <interface-name>.<subinterface-index>";
+        }
+        container statistics {
+          leaf clear {
+            type empty;
+            description
+              "Reset IGMP SNOOPING statistics for this interface";
+          }
+          description
+            "Enter the statistics context";
+        }
+        container membership-groups {
+          leaf clear {
+            type empty;
+            description
+              "Clear all IGMP SNOOPING memberships for this interface";
+          }
+          list group {
+            key "group";
+            description
+              "Multicast group membership";
+            leaf group {
+              type srl-comm:ipv4-address;
+              description
+                "Multicast address";
+            }
+            leaf clear {
+              type empty;
+              description
+                "Clear all IGMP SNOOPING memberships for this group on this interface";
+            }
+            list source {
+              key "source";
+              description
+                "Source addresses of multicast";
+              leaf source {
+                type srl-comm:ipv4-address;
+                description
+                  "Source address of multicast";
+              }
+              leaf clear {
+                type empty;
+                description
+                  "Clear all IGMP SNOOPING memberships for this source on this interface";
+              }
+            }
+          }
+          description
+            "Enter the membership-groups context";
+        }
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:protocols" {
+    uses igmp-snooping-tools-top;
+  }
+}

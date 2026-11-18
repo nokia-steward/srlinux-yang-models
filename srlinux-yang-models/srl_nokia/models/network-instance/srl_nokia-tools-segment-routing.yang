@@ -1,0 +1,56 @@
+module srl_nokia-tools-segment-routing {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:net-inst:tools-segrt";
+  prefix srl-tool-segm-rout;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for Segment routing operational commands
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2026-03-31 {
+    description
+      "SR Linux 26.3.1";
+  }
+
+  grouping segment-routing-tools-top {
+    container mpls {
+      presence "Send operational commands to Segment Routing manager";
+      container statistics {
+        if-feature "srl-feat:segment-routing-shared-sid-lsp-stats";
+        leaf clear {
+          type empty;
+          description
+            "Reset SID statistics to zero.";
+        }
+        description
+          "Enter the statistics context";
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:segment-routing" {
+    uses segment-routing-tools-top;
+  }
+}

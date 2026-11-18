@@ -1,0 +1,97 @@
+module ietf-srl-augments {
+
+  yang-version 1.1;
+
+  namespace "urn:nokia.com:srlinux:ietf:ietf-srl-augments";
+
+  prefix ietf-srl-augments;
+
+  import srl_nokia-extensions {
+    prefix srl_nokia-extensions;
+  }
+  import ietf-interfaces {
+    prefix ietf-interfaces;
+  }
+  import ietf-system {
+    prefix ietf-system;
+  }
+  import ietf-netconf-acm {
+    prefix ietf-netconf-acm;
+  }
+  import ietf-netconf-monitoring {
+    prefix ietf-netconf-monitoring;
+  }
+  import ietf-yang-library {
+    prefix ietf-yang-library;
+  }
+  import ietf-snmp {
+    prefix ietf-snmp;
+  }
+  import ietf-ipfix-psamp {
+    prefix ietf-ipfix-psamp;
+  }
+
+  organization "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module augments the srl_nokia-extensions:telemetry-capability extension
+     into the IETF models.
+
+     There is currently no requirement for the IETF models to be supported by
+     streaming telemetry, so 'unsupported' is augmented at the root of every IETF
+     model that contributes schema (data) nodes. The capability is inherited by
+     all descendant nodes. IETF modules that contribute only non-schema nodes
+     (such as typedefs, identities, metadata, notifications or RPCs) do not
+     require tagging.";
+
+  revision 2026-07-31 {
+    description
+      "SRLinux 26.7.1";
+  }
+
+  // ietf-interfaces
+  augment "/ietf-interfaces:interfaces" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+  augment "/ietf-interfaces:interfaces-state" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+
+  // ietf-system
+  augment "/ietf-system:system" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+  augment "/ietf-system:system-state" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+
+  // ietf-netconf-acm
+  augment "/ietf-netconf-acm:nacm" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+
+  // ietf-netconf-monitoring
+  augment "/ietf-netconf-monitoring:netconf-state" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+
+  // ietf-yang-library
+  augment "/ietf-yang-library:yang-library" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+  augment "/ietf-yang-library:modules-state" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+
+  // ietf-snmp (the /snmp tree belongs-to ietf-snmp via the ietf-snmp-common submodule)
+  augment "/ietf-snmp:snmp" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+
+  // ietf-ipfix-psamp
+  augment "/ietf-ipfix-psamp:ipfix" {
+    srl_nokia-extensions:telemetry-capability "unsupported";
+  }
+}

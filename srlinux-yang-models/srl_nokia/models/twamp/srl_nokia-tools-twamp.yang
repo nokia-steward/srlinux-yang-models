@@ -1,0 +1,58 @@
+module srl_nokia-tools-twamp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:twamp:tools-twamp";
+  prefix srl-tool-twam;
+
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-tools-oam {
+    prefix srl-tool-oam;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines the tools commands available for TWAMP Server/Session Reflector
+
+     Copyright 2024-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+
+  augment "/srl-tool-oam:oam" {
+    if-feature "srl-feat:twamp";
+    container twamp {
+      presence "Tools commands to affect packet count and error statistics";
+      container server {
+        list network-instance {
+          key "name";
+          leaf name {
+            type string;
+          }
+          leaf clear {
+            type empty;
+            description
+              "Clear all TWAMP test session transmit and receive packet counts and all error counts";
+          }
+        }
+        description
+          "Enter the server context";
+      }
+    }
+  }
+}

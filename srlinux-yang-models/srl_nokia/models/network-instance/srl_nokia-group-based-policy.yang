@@ -1,0 +1,184 @@
+module srl_nokia-group-based-policy {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:net-inst:group-based-policy";
+  prefix srl-grou-base-poli;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-platform-resource-mgmt {
+    prefix srl-plat-reso-mgmt;
+  }
+  import srl_nokia-platform {
+    prefix srl-plat;
+  }
+  import srl_nokia-routing-policy {
+    prefix srl-rpol;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "A model for Group Based Policy of a network instance
+
+     Copyright 2025-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-10-31 {
+    description
+      "SR Linux 25.10.1";
+  }
+
+  grouping group-based-policy-top {
+    container group-based-policy {
+      presence "Container for the micro segmentation Group Based Policy";
+      description
+        "Container for the micro segmentation Group Based Policy";
+      must "(../srl-netinst:type = 'mac-vrf' or ../srl-netinst:type = 'ip-vrf')" {
+        error-message "Group-Based Policy is supported on network instance of type mac-vrf and ip-vrf";
+      }
+      must "../srl-netinst:type = 'ip-vrf'" {
+        error-message "Group-Based Policy is supported on ip-vrf network-instances only";
+        srl-exts:if-feature "not(srl-feat:platform-group-based-policy)";
+      }
+      must "(/srl-plat:platform/srl-plat-reso-mgmt:resource-management/srl-plat-reso-mgmt:group-based-policy/srl-plat-reso-mgmt:mac-lookup = true()) or (../srl-netinst:type = 'ip-vrf')" {
+        error-message "Group-Based Policy is supported on mac-vrf network-instances only when platform resource-management group-based-policy mac-lookup is true";
+        srl-exts:if-feature "srl-feat:platform-group-based-policy";
+      }
+      must "../srl-netinst:type != 'ip-vrf'" {
+        error-message "On the current platform Group-Based Policy is not supported on network instance of type ip-vrf";
+        srl-exts:if-feature "not(srl-feat:group-based-policy-ip-vrf)";
+      }
+      container multi-tag {
+        if-feature "srl-feat:gbp-multi-tag";
+        description
+          "Enter the multi-tag context
+
+           Container for the multi-tag definition";
+        list tag {
+          description
+            "List of tag indexes in the Group Based Policy";
+          key "index";
+          leaf index {
+            type uint16 {
+              range "1..14";
+            }
+            description
+              "The index of the tag";
+          }
+          leaf bit-size {
+            type uint16 {
+              range "1..14";
+            }
+            description
+              "The bit-size of the tag index";
+          }
+          leaf description {
+            type srl-comm:description;
+            description
+              "Description string for the tag index";
+          }
+        }
+        leaf total-bits {
+          config false;
+          type uint16;
+          description
+            "Total number of multi-tag bits supported by this system";
+        }
+      }
+      list group {
+        description
+          "List of groups in the Group Based Policy";
+        key "name";
+        max-elements 65534;
+        unique "tag-index tag-value";
+        leaf name {
+          type string;
+          description
+            "The name of the group";
+        }
+        leaf tag-index {
+          if-feature "srl-feat:gbp-multi-tag";
+          description
+            "The index of the group";
+          type leafref {
+            path "../../multi-tag/tag/index";
+          }
+        }
+        leaf tag-value {
+          mandatory true;
+          type uint16 {
+            range "0..65535";
+          }
+          description
+            "The tag value associated to this group";
+        }
+      }
+      list interface {
+        description
+          "List of subinterfaces part of this network-instance with their group association";
+        key "interface-name";
+        leaf interface-name {
+          type srl-comm:subinterface-all;
+          description
+            "Reference to a specific subinterface of the form <interface-name>.<subinterface-index>";
+        }
+        leaf-list group {
+          description
+            "List of groups associated to the subinterface";
+          type leafref {
+            path "../../group/name";
+          }
+        }
+      }
+      list prefix-set {
+        if-feature "srl-feat:group-based-policy-prefix-sets";
+        max-elements 4;
+        description
+          "List of prefix-sets to associate with group tags";
+        key "name";
+        leaf name {
+          type leafref {
+            path "/srl-rpol:routing-policy/srl-rpol:prefix-set/srl-rpol:name";
+          }
+          description
+            "Reference to a specific prefix-set
+
+             If an IPv4 or IPv6 route in the route-table of the network-instance is matched by an entry in the referenced prefix-set it is associated with the groups configured in this context, but only if the route does not already have group(s) associations.";
+        }
+        leaf-list group {
+          description
+            "List of groups associated to the subinterface";
+          type leafref {
+            path "../../group/name";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-netinst:network-instance" {
+    uses group-based-policy-top;
+    if-feature "srl-feat:group-based-policy";
+  }
+}

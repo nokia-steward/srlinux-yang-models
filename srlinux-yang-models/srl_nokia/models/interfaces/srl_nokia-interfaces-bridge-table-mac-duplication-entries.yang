@@ -1,0 +1,111 @@
+module srl_nokia-interfaces-bridge-table-mac-duplication-entries {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac:interfaces-bridge-table-mac-duplication-entries";
+  prefix srl-ifs-brid-tbl-mac-dupl-entr;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-interfaces {
+    prefix srl-ifs;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file gives a description of duplicate mac entries installed in this interface's bridge table.
+
+     Copyright 2020-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+
+  grouping delete-all-macs-action {
+    action delete-all-macs {
+      srl-exts:telemetry-capability "unsupported";
+      if-feature "srl-feat:tools-as-modeled-actions-same-io";
+      description
+        "Execute the delete-all-macs action
+
+         Delete all learnt mac entries.";
+    }
+  }
+
+  grouping delete-mac-action {
+    action delete-mac {
+      srl-exts:telemetry-capability "unsupported";
+      if-feature "srl-feat:tools-as-modeled-actions-same-io";
+      description
+        "Execute the delete-mac action
+
+         delete the duplicate mac address.";
+    }
+  }
+
+  grouping bridge-table-mac-duplication-entries-top {
+    container duplicate-entries {
+      config false;
+      list mac {
+        config false;
+        key "address";
+        description
+          "macs duplicate on the bridging instance";
+        leaf address {
+          type srl-comm:mac-address;
+        }
+        leaf dup-detect-time {
+          type srl-comm:date-and-time-delta;
+          srl-exts:show-importance "high";
+          description
+            "The date and time when the mac was declared duplicate";
+        }
+        leaf hold-down-time-remaining {
+          type union {
+            type enumeration {
+              enum indefinite {
+                value 1;
+              }
+            }
+            type uint64;
+          }
+          units "seconds";
+          srl-exts:show-importance "high";
+          description
+            "remaining hold down time for duplicate mac";
+        }
+        uses delete-mac-action;
+      }
+      description
+        "Enter the duplicate-entries context";
+    }
+  }
+
+  augment "/srl-ifs:interface/srl-ifs:subinterface/srl-ifs:bridge-table/srl-ifs:mac-duplication" {
+    uses delete-all-macs-action;
+    uses bridge-table-mac-duplication-entries-top;
+  }
+}

@@ -1,0 +1,203 @@
+module srl_nokia-system-transceiver-firmware {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:system:transceiver-firmware";
+  prefix srl-sys-tran-firm;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for operational actions on transceivers
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping action-transceiver-interface-choice {
+    description
+      "Common input choice between an explicit interface or all interfaces";
+    choice interface-or-all {
+      mandatory true;
+      case interface {
+        leaf-list interface {
+          min-elements 1;
+          description
+            "The list of interfaces with transceivers to be included in the operation
+
+             Current support restricts the list to a maximum of one interface.";
+          type srl-comm:name;
+        }
+      }
+      case all-interfaces {
+        if-feature "srl-feat:transceiver-firmware-upgrade-all-interfaces";
+        leaf all-interfaces {
+          type empty;
+        }
+      }
+    }
+  }
+
+  grouping action-transceiver-firmware-top {
+    description
+      "Top-level grouping for transceiver firmware actions";
+    container transceiver {
+      if-feature "srl-feat:transceiver-firmware-upgrade";
+      config false;
+      description
+        "Enter the transceiver context
+
+         Actions related to transceivers";
+      container firmware {
+        config false;
+        description
+          "Enter the firmware context
+
+           Actions related to transceiver firmware";
+        action transfer {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+          description
+            "Execute the transfer action
+
+             Initiate a transfer of a new image into one or more transceivers
+
+             Only one transfer operation can be active at a time.";
+          input {
+            uses action-transceiver-interface-choice;
+            choice image-source {
+              mandatory true;
+              case file {
+                leaf file {
+                  type srl-comm:local-file;
+                  description
+                    "File containing an image
+
+                     This is used for a traditional distribution of images as binary files containing only the entire block of data to be transferred to the transceiver.";
+                }
+              }
+              case package {
+                if-feature "srl-feat:transceiver-firmware-upgrade-package";
+                leaf package {
+                  type srl-comm:local-file;
+                  description
+                    "File containing a package of images including metadata headers
+
+                     This is used for packages as defined by OIF XXX.  It is expected to be .tgz format that needs extraction.
+                     The package by target transceiver to select the newest image for that transceiver based on vendor and vendor part number.";
+                }
+              }
+            }
+          }
+          output {
+            leaf info {
+              type string;
+              description
+                "Info message returned by the transfer operation";
+            }
+          }
+        }
+        action abort-transfer {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+          description
+            "Execute the abort-transfer action
+
+             Abort the current transfer operation active on one or more transceivers";
+          input {
+            uses action-transceiver-interface-choice;
+          }
+          output {
+            leaf info {
+              type string;
+              description
+                "Info message returned by the abort-transfer operation";
+            }
+          }
+        }
+        action activate {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+          description
+            "Execute the activate action
+
+             Activate firmware";
+          input {
+            uses action-transceiver-interface-choice;
+            leaf action {
+              description
+                "Specifies the specific activation action to be performed";
+              mandatory true;
+              type enumeration {
+                enum switch-to-inactive-bank {
+                  value 1;
+                }
+                enum switch-hitless-to-inactive-bank {
+                  value 2;
+                }
+                enum restart-active-bank {
+                  value 3;
+                }
+                enum restart-hitless-active-bank {
+                  value 4;
+                }
+              }
+            }
+            leaf no-commit {
+              type empty;
+              description
+                "If specified, committed bank is not changed";
+            }
+          }
+          output {
+            leaf info {
+              type string;
+              description
+                "Info message returned by the activate operation";
+            }
+          }
+        }
+        action commit-running {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-different-io-chassis-mgr";
+          description
+            "Execute the commit-running action
+
+             Commit the active bank on one or more transceivers";
+          input {
+            uses action-transceiver-interface-choice;
+          }
+          output {
+            leaf info {
+              type string;
+              description
+                "Info message returned by the commit-running operation";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  augment "/srl-sys:system" {
+    uses action-transceiver-firmware-top;
+  }
+}

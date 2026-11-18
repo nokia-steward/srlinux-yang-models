@@ -1,0 +1,96 @@
+module srl_nokia-bridge-table-mac-learning-entries {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-mac-learn:bridge-table-mac-learning-entries";
+  prefix srl-brid-tbl-mac-lear-entr;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-interfaces-bridge-table-mac-learning-entries {
+    prefix srl-ifs-brid-tbl-mac-lear-entr;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This yang file gives a description of bridge table configuration.
+
+     Copyright 2020-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+  revision 2020-06-30 {
+    description
+      "SR Linux 20.6.1";
+  }
+
+  grouping bridge-table-mac-learning-entries-top {
+    container learnt-entries {
+      config false;
+      list mac {
+        config false;
+        key "address";
+        description
+          "macs learnt on the bridging instance";
+        leaf address {
+          type srl-comm:mac-address;
+          srl-exts:show-importance "high";
+        }
+        leaf destination {
+          type string;
+          srl-exts:show-importance "high";
+          description
+            "the name of the subinterface where the mac is learnt against.";
+        }
+        leaf last-update {
+          type srl-comm:date-and-time-delta;
+          srl-exts:show-importance "high";
+          description
+            "The date and time of the last update of this learnt mac";
+        }
+        leaf aging {
+          type union {
+            type uint64;
+            type enumeration {
+              enum disabled {
+                value -1;
+              }
+            }
+          }
+          units "seconds";
+          srl-exts:show-importance "high";
+          description
+            "remaining age time for learnt macs";
+        }
+        uses srl-ifs-brid-tbl-mac-lear-entr:delete-mac-action;
+      }
+      description
+        "Enter the learnt-entries context";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:bridge-table/srl-netinst:mac-learning" {
+    uses srl-ifs-brid-tbl-mac-lear-entr:delete-all-macs-action;
+    uses bridge-table-mac-learning-entries-top;
+  }
+}

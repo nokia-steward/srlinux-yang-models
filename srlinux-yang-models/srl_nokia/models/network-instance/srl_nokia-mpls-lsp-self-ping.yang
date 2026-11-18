@@ -1,0 +1,173 @@
+module srl_nokia-mpls-lsp-self-ping {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:mpls:mpls-lsp-self-ping";
+  prefix srl-mpls-lsp-self-ping;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-mpls {
+    prefix srl-mpls;
+  }
+  import srl_nokia-mpls-rsvp-tunnel {
+    prefix srl-mpls-rsvp-tunn;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This YANG module defines configuration and state for LSP Self Ping on
+     RSVP-TE constrained path tunnels.
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+
+  grouping lsp-self-ping-global-config {
+    description
+      "Global LSP Self Ping configuration for constrained path tunnels";
+    leaf enable {
+      type boolean;
+      default "false";
+      description
+        "Enable LSP Self Ping for RSVP-TE constrained path tunnels.";
+    }
+    leaf interval {
+      type uint32 {
+        range "1..10";
+      }
+      units "seconds";
+      default "1";
+      description
+        "Interval at which LSP Self Ping packets are sent while waiting for
+         a reply.";
+    }
+    leaf timeout {
+      type uint32 {
+        range "3..3600";
+      }
+      units "seconds";
+      default "300";
+      description
+        "Maximum time to wait for the first LSP Self Ping reply.";
+    }
+    leaf timeout-action {
+      type enumeration {
+        enum retry {
+          value 1;
+          description
+            "Retry the LSP path.";
+        }
+        enum switch {
+          value 2;
+          description
+            "Switch to the LSP path.";
+        }
+      }
+      default "retry";
+      description
+        "Action to take when a LSP Self Ping timer expires.";
+    }
+  }
+
+  grouping lsp-self-ping-tunnel-config {
+    description
+      "Per-tunnel LSP Self Ping configuration under p2p-tunnel-attributes";
+    leaf lsp-self-ping {
+      type boolean;
+      description
+        "Enable LSP Self Ping for this constrained path tunnel.
+
+          If no value is configured, the setting is inherited from the global
+          configuration.";
+    }
+  }
+
+  grouping lsp-self-ping-tunnel-state {
+    description
+      "Per-tunnel LSP Self Ping state";
+    leaf lsp-self-ping-timeouts {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "The number of paths/networks which have experienced lsp self ping timeouts for this tunnel.";
+    }
+    leaf lsp-self-ping-oam-resource-failures {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "Number of times LSP self ping failed due to an OAM resource failure.";
+    }
+  }
+
+  grouping lsp-self-ping-global-state {
+    description
+      "Global LSP Self Ping state for constrained path tunnels";
+    leaf lsp-self-ping-timeouts {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "The number of constrained path tunnels/paths which have experienced lsp self ping timeouts.";
+    }
+    leaf lsp-self-ping-oam-resource-failures {
+      type srl-comm:zero-based-counter32;
+      config false;
+      description
+        "Number of times LSP self ping failed due to an OAM resource failure.";
+    }
+  }
+
+  grouping lsp-self-ping-path-state {
+    description
+      "LSP Self Ping state for an RSVP-TE constrained path tunnel path";
+    leaf lsp-self-ping-oper-state {
+      srl-exts:show-importance "high";
+      type srl-comm:oper-state;
+      config false;
+      description
+        "Operational state of the LSP Self Ping session for this path.";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-mpls:mpls/srl-mpls:lsps/srl-mpls-rsvp-tunn:constrained-path/srl-mpls-rsvp-tunn:global" {
+    if-feature "srl-feat:lsp-self-ping";
+    container lsp-self-ping {
+      description
+        "Enter the lsp-self-ping context";
+      uses lsp-self-ping-global-config;
+      uses lsp-self-ping-global-state;
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-mpls:mpls/srl-mpls:lsps/srl-mpls-rsvp-tunn:constrained-path/srl-mpls-rsvp-tunn:tunnel/srl-mpls-rsvp-tunn:p2p-tunnel-attributes" {
+    if-feature "srl-feat:lsp-self-ping";
+    uses lsp-self-ping-tunnel-config;
+    uses lsp-self-ping-tunnel-state;
+  }
+
+  augment "/srl-netinst:network-instance/srl-mpls:mpls/srl-mpls:lsps/srl-mpls-rsvp-tunn:constrained-path/srl-mpls-rsvp-tunn:tunnel/srl-mpls-rsvp-tunn:p2p-tunnel-attributes/srl-mpls-rsvp-tunn:p2p-primary" {
+    if-feature "srl-feat:lsp-self-ping";
+    uses lsp-self-ping-path-state;
+  }
+
+  augment "/srl-netinst:network-instance/srl-mpls:mpls/srl-mpls:lsps/srl-mpls-rsvp-tunn:constrained-path/srl-mpls-rsvp-tunn:tunnel/srl-mpls-rsvp-tunn:p2p-tunnel-attributes/srl-mpls-rsvp-tunn:p2p-secondary" {
+    if-feature "srl-feat:lsp-self-ping";
+    uses lsp-self-ping-path-state;
+  }
+}

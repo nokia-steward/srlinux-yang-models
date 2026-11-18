@@ -1,0 +1,136 @@
+module srl_nokia-system-bridge-table-proxy-arp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:l2-proxy-arp-nd:system-bridge-table-proxy-arp";
+  prefix srl-sys-brid-tbl-prox-arp;
+
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+  import srl_nokia-system-bridge-table {
+    prefix srl-sys-brid-tbl;
+  }
+  import srl_nokia-bridge-table-proxy-arp-nd {
+    prefix srl-brid-tbl-prox-arp-nd;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This module defines system bridge-table proxy ARP configuration and operational
+     state data.
+
+     Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+  revision 2022-11-30 {
+    description
+      "SR Linux 22.11.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+  revision 2021-11-30 {
+    description
+      "SR Linux 21.11.1";
+  }
+
+  grouping bridge-table-proxy-table-statistics-type-common-top {
+    leaf total-entries {
+      config false;
+      type srl-comm:zero-based-counter64;
+      srl-exts:show-importance "high";
+      description
+        "The total number of proxy ARP entries.";
+    }
+    leaf active-entries {
+      config false;
+      type srl-comm:zero-based-counter64;
+      srl-exts:show-importance "high";
+      description
+        "The total number of active proxy ARP entries.";
+    }
+    leaf in-active-entries {
+      config false;
+      type srl-comm:zero-based-counter64;
+      srl-exts:show-importance "high";
+      description
+        "The total number of inactive proxy ARP entries.";
+    }
+    leaf pending-entries {
+      config false;
+      type srl-comm:zero-based-counter64;
+      srl-exts:show-importance "high";
+      description
+        "The total number of pending proxy ARP entries.";
+    }
+  }
+
+  grouping bridge-table-proxy-table-statistics-common-top {
+    container statistics {
+      config false;
+      uses bridge-table-proxy-table-statistics-type-common-top;
+      list neighbor-origin {
+        config false;
+        key "origin";
+        description
+          "the origin of the proxy ARP installed in the table.";
+        leaf origin {
+          type srl-brid-tbl-prox-arp-nd:neighbor-origin;
+          srl-exts:show-importance "high";
+        }
+        uses bridge-table-proxy-table-statistics-type-common-top;
+      }
+      description
+        "Enter the statistics context";
+    }
+  }
+
+  grouping bridge-table-proxy-arp-top {
+    container proxy-arp {
+      config false;
+      description
+        "Enter the proxy-arp context
+
+         system bridge-table proxy ARP information";
+      uses bridge-table-proxy-table-statistics-common-top;
+    }
+  }
+
+  grouping bridge-table-proxy-nd-top {
+    container proxy-nd {
+      config false;
+      description
+        "Enter the proxy-nd context
+
+         system bridge-table proxy ND entry information";
+      uses bridge-table-proxy-table-statistics-common-top;
+    }
+  }
+
+  augment "/srl-sys:system/srl-sys-brid-tbl:bridge-table" {
+    uses bridge-table-proxy-arp-top;
+    uses bridge-table-proxy-nd-top;
+  }
+}

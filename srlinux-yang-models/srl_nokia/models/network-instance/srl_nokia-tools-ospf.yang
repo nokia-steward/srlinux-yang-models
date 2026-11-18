@@ -1,0 +1,169 @@
+module srl_nokia-tools-ospf {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:ospf:tools-ospf";
+  prefix srl-tool-ospf;
+
+  import ietf-yang-types {
+    prefix ietf-yang-type;
+  }
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-tools-network-instance {
+    prefix srl-tool-netinst;
+  }
+  import srl_nokia-ospf-types {
+    prefix srl-ospf-type;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Model for OSPF operational commands
+
+     Copyright 2021-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2023-03-31 {
+    description
+      "SR Linux 23.3.1";
+  }
+  revision 2021-06-30 {
+    description
+      "SR Linux 21.6.1";
+  }
+  revision 2021-03-31 {
+    description
+      "SR Linux 21.3.1";
+  }
+
+  grouping ospf-tools-top {
+    container ospf {
+      presence "Send operational commands to OSPF manager";
+      list instance {
+        max-elements 1;
+        description
+          "List of OSPF protocol instances associated with this network-instance. Only a single instance is supported for now";
+        key "name";
+        leaf name {
+          description
+            "The name of the OSPF instance";
+          type srl-comm:name;
+        }
+        container ldp-synchronization {
+          leaf exit {
+            type empty;
+            description
+              "Advertise the norrmal metric for all OSPF interfaces, even if some are configured for LDP synchronization and OSPF is not in sync with LDP on these interfaces";
+          }
+          description
+            "Enter the ldp-synchronization context";
+        }
+        container link-state-database {
+          description
+            "Enter the link-state-database context
+
+             The OSPF link state database";
+          leaf clear {
+            type empty;
+            description
+              "Clear the contents of the LSDB.";
+          }
+        }
+        container neighbors {
+          description
+            "Enter the neighbors context
+
+             Container for OSPF neighbors tools";
+          leaf clear {
+            type empty;
+            description
+              "Clear all OSPF neighbors";
+          }
+          list neighbor {
+            key "neighbor-id";
+            leaf neighbor-id {
+              description
+                "The neighbor's ip-address in case of OSPFv2, the router-id otherwise";
+              type ietf-yang-type:dotted-quad;
+            }
+            leaf clear {
+              type empty;
+              description
+                "Reset this neighbor in the OSPF instance";
+            }
+          }
+        }
+        list area {
+          description
+            "List of OSPF area";
+          key "area-id";
+          leaf area-id {
+            type srl-ospf-type:ospf-area-identifier;
+          }
+          list interface {
+            description
+              "List of OSPF interfaces";
+            key "interface-name";
+            leaf interface-name {
+              type srl-comm:subinterface-all;
+              description
+                "Reference to a specific subinterface of the form <interface-name>.<subinterface-index>";
+            }
+            container neighbors {
+              leaf clear {
+                type empty;
+                description
+                  "Reset all of the adjacencies on this interface";
+              }
+              description
+                "Enter the neighbors context";
+            }
+          }
+        }
+        container statistics {
+          leaf clear {
+            type empty;
+            description
+              "Reset all of the OSPF instance statistics to zero.";
+          }
+          description
+            "Enter the statistics context";
+        }
+        container overload {
+          leaf clear {
+            type empty;
+            description
+              "Reset OSPF instance overload status.";
+          }
+          description
+            "Enter the overload context";
+        }
+        container manual-spf {
+          leaf run {
+            type empty;
+            description
+              "Run a SPF calculation.";
+          }
+          description
+            "Enter the manual-spf context";
+        }
+      }
+    }
+  }
+
+  augment "/srl-tool-netinst:network-instance/srl-tool-netinst:protocols" {
+    uses ospf-tools-top;
+  }
+}

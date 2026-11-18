@@ -1,0 +1,531 @@
+module srl_nokia-bgp-bmp {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:bgp:bmp";
+  prefix srl-bgp-bmp;
+
+  import srl_nokia-common {
+    prefix srl-comm;
+  }
+  import srl_nokia-network-instance {
+    prefix srl-netinst;
+  }
+  import srl_nokia-bgp {
+    prefix srl-bgp;
+  }
+  import srl_nokia-bgp-bmp-types {
+    prefix srl-bgp-bmp-type;
+  }
+  import srl_nokia-keychains {
+    prefix srl-keyc;
+  }
+  import srl_nokia-system {
+    prefix srl-sys;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
+  import srl_nokia-extensions {
+    prefix srl-exts;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "This YANG file models configuration and state of the BGP Monitoring Protocol (BMP)
+
+     Copyright 2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+
+  grouping bmp-station-config {
+    description
+      "Configuration parameters for a BMP station (collector)";
+    leaf name {
+      type srl-comm:name {
+        length "1..64";
+      }
+      description
+        "The configured name of the BMP station";
+    }
+    leaf admin-state {
+      type srl-comm:admin-state;
+      default "disable";
+      description
+        "Administratively enable or disable the BMP station";
+    }
+    leaf description {
+      type srl-comm:description;
+      description
+        "A user provided description string for the BMP station";
+    }
+    leaf address {
+      type srl-comm:ip-address;
+      mandatory true;
+      description
+        "The IP address of the BMP collector";
+    }
+    leaf port {
+      type srl-comm:port-number;
+      default "5000";
+      description
+        "The TCP port number of the BMP collector";
+    }
+    leaf local-address {
+      type srl-comm:ip-address;
+      description
+        "The local IP address used as the source for the BMP session";
+    }
+    leaf local-port {
+      type srl-comm:port-number;
+      description
+        "The local TCP port used for the BMP session";
+    }
+    leaf transport-network-instance {
+      type leafref {
+        path "/srl-netinst:network-instance/srl-netinst:name";
+      }
+      description
+        "Network-instance used for TCP transport to the BMP collector.
+
+         When configured, the TCP connection to the collector is
+         established in this network-instance instead of the
+         network-instance where BMP is configured. This enables
+         out-of-band collector reachability via the management
+         network-instance (e.g. mgmt).
+
+         If not specified, the parent network-instance is used.";
+    }
+    leaf connection-mode {
+      type srl-bgp-bmp-type:connection-mode;
+      default "active";
+      description
+        "The connection mode for the BMP session";
+    }
+    leaf-list route-monitoring-policy {
+      min-elements 1;
+      type identityref {
+        base srl-bgp-bmp-type:route-monitoring-policy;
+      }
+      description
+        "List of route monitoring policies to apply for this station.
+         At least one policy is required at the station level.";
+    }
+    leaf suppress-rejected-routes {
+      type boolean;
+      default "false";
+      description
+        "When true, routes rejected by import policy are not sent in
+         post-policy-rib-in monitoring";
+    }
+    leaf initiation-message {
+      type string {
+        length "1..255";
+      }
+      description
+        "String to include in the BMP Initiation Message sent to the collector";
+    }
+  }
+
+  grouping bmp-tcp-parameters {
+    description
+      "TCP parameters for BMP sessions";
+    container tcp-parameters {
+      description
+        "Enter the tcp-parameters context
+
+         Container with TCP connection parameters for the BMP session";
+      container authentication {
+        description
+          "Enter the authentication context
+
+           Container with authentication options for the BMP session";
+        leaf keychain {
+          type leafref {
+            path "/srl-sys:system/srl-keyc:authentication/srl-keyc:keychain/srl-keyc:name";
+          }
+          must '/srl-sys:system/srl-keyc:authentication/srl-keyc:keychain[srl-keyc:name = current()]/srl-keyc:type = "tcp-md5"' {
+            error-message "Only keychain of type tcp-md5 can be assigned";
+          }
+          description
+            "Reference to a keychain for TCP MD5 authentication";
+        }
+        leaf password {
+          type srl-comm:routing-password;
+          description
+            "Configures an MD5 authentication password for use with the BMP collector";
+          must 'boolean(../keychain) = false()' {
+            error-message "Cannot assign both keychain and password";
+          }
+        }
+      }
+      container keepalive {
+        description
+          "Enter the keepalive context
+
+           TCP keepalive parameters";
+        leaf idle-time {
+          type uint16 {
+            range "60..7200";
+          }
+          units "seconds";
+          default "60";
+          description
+            "Time before sending first keepalive probe";
+        }
+        leaf probe-count {
+          type uint8 {
+            range "1..10";
+          }
+          default "3";
+          description
+            "Number of keepalive probes before declaring connection dead";
+        }
+        leaf probe-interval {
+          type uint16 {
+            range "1..300";
+          }
+          units "seconds";
+          default "30";
+          description
+            "Interval between keepalive probes";
+        }
+      }
+      container connect-retry {
+        description
+          "Enter the connect-retry context
+
+           Connection retry parameters";
+        leaf interval {
+          type uint16 {
+            range "1..3600";
+          }
+          units "seconds";
+          default "120";
+          description
+            "Time interval between connection retry attempts";
+        }
+      }
+    }
+  }
+
+  grouping bmp-statistics-reporting {
+    description
+      "Statistics reporting configuration";
+    container statistics-reporting {
+      description
+        "Enter the statistics-reporting context
+
+         Container for BMP statistics reporting configuration";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "enable";
+        description
+          "Administratively enable or disable statistics reporting";
+      }
+      leaf interval {
+        type uint32 {
+          range "15..65535";
+        }
+        units "seconds";
+        default "3600";
+        description
+          "Interval for sending periodic statistics reports";
+      }
+    }
+  }
+
+  grouping bmp-station-state {
+    description
+      "Operational state for a BMP station";
+    container state {
+      config false;
+      description
+        "Enter the state context
+
+         Operational state of the BMP station";
+      leaf session-state {
+        type srl-bgp-bmp-type:session-state;
+        description
+          "Current state of the BMP session";
+      }
+      leaf session-uptime {
+        type srl-comm:date-and-time-delta;
+        description
+          "Time since the BMP session was established";
+      }
+      leaf last-state-change {
+        type srl-comm:date-and-time;
+        description
+          "Timestamp of the last session state change";
+      }
+      leaf connection-attempt-count {
+        type srl-comm:zero-based-counter32;
+        description
+          "Number of connection attempts to the collector";
+      }
+      leaf messages-sent {
+        type srl-comm:zero-based-counter64;
+        description
+          "Total number of BMP messages sent to the collector";
+      }
+      leaf messages-failed {
+        type srl-comm:zero-based-counter32;
+        description
+          "Number of BMP messages that failed to send";
+      }
+      leaf last-error {
+        type string;
+        description
+          "Description of the last error encountered";
+      }
+      leaf monitored-peers {
+        type srl-comm:zero-based-counter32;
+        description
+          "Number of BGP peers currently monitored by this station";
+      }
+    }
+  }
+
+  grouping bmp-statistics {
+    description
+      "BMP statistics";
+    container statistics {
+      config false;
+      description
+        "Enter the statistics context
+
+         BMP operational statistics";
+      leaf total-peers-monitored {
+        type srl-comm:zero-based-counter32;
+        description
+          "Total number of BGP peers monitored across all stations";
+      }
+      leaf total-route-monitoring-sent {
+        type srl-comm:zero-based-counter64;
+        description
+          "Total number of route monitoring messages sent";
+      }
+      leaf total-statistics-sent {
+        type srl-comm:zero-based-counter64;
+        description
+          "Total number of statistics report messages sent";
+      }
+      leaf total-peer-up-sent {
+        type srl-comm:zero-based-counter64;
+        description
+          "Total number of peer up notification messages sent";
+      }
+      leaf total-peer-down-sent {
+        type srl-comm:zero-based-counter64;
+        description
+          "Total number of peer down notification messages sent";
+      }
+    }
+  }
+
+  grouping bmp-monitor-group-neighbor {
+    description
+      "BMP monitoring configuration for AFI-SAFI";
+    container bmp {
+      description
+        "Enter the bmp context
+
+         BMP monitoring configuration";
+      container monitor {
+        description
+          "Enter the monitor context
+
+           BMP route monitoring configuration";
+        list station {
+          key "name";
+          must "../../../srl-bgp:afi-safi-name = 'ipv4-unicast' or ../../../srl-bgp:afi-safi-name = 'ipv6-unicast' or ../../../srl-bgp:afi-safi-name = 'l3vpn-ipv4-unicast' or ../../../srl-bgp:afi-safi-name = 'l3vpn-ipv6-unicast' or ../../../srl-bgp:afi-safi-name = 'ipv4-labeled-unicast' or ../../../srl-bgp:afi-safi-name = 'ipv6-labeled-unicast' or ../../../srl-bgp:afi-safi-name = 'evpn' or ../../../srl-bgp:afi-safi-name = 'srte-policy-ipv4' or ../../../srl-bgp:afi-safi-name = 'srte-policy-ipv6'" {
+            error-message "BMP monitoring is not supported for this address family";
+          }
+          description
+            "List of BMP stations monitoring this AFI-SAFI";
+          leaf name {
+            type leafref {
+              path "../../../../../../bmp/station/name";
+            }
+            description
+              "Reference to a configured BMP station";
+          }
+          leaf admin-state {
+            type srl-comm:admin-state;
+            default "enable";
+            description
+              "Administratively enable or disable monitoring for this station";
+          }
+          leaf-list route-monitoring-policy {
+            type identityref {
+              base srl-bgp-bmp-type:route-monitoring-policy;
+            }
+            description
+              "Override the station-level route monitoring policy for this AFI-SAFI.
+
+               If not specified, the station-level route-monitoring-policy is inherited.
+               See PRD Section 5.3.3 for the full inheritance rules:
+               1. If monitoring-policy is set at the neighbor AFI-SAFI level, use it
+               2. Else if set at the group AFI-SAFI level, use it
+               3. Else fall back to the station-level route-monitoring-policy
+               4. If the station has no route-monitoring-policy, no route monitoring occurs";
+          }
+        }
+      }
+    }
+  }
+
+  grouping bmp-monitor-state {
+    description
+      "BMP monitoring operational state at neighbor level";
+    leaf last-bmp-peer-up {
+      config false;
+      type srl-comm:date-and-time;
+      description
+        "Timestamp of the last peer up notification sent";
+    }
+    leaf last-bmp-peer-down {
+      config false;
+      type srl-comm:date-and-time;
+      description
+        "Timestamp of the last peer down notification sent";
+    }
+  }
+
+  grouping bmp-top {
+    description
+      "Top-level BMP configuration and state";
+    container bmp {
+      description
+        "Enter the bmp context
+
+         BGP Monitoring Protocol configuration and state";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "enable";
+        description
+          "Administratively enable or disable BMP for the network-instance";
+      }
+      leaf vrf-distinguisher {
+        type srl-comm:route-distinguisher;
+        description
+          "VRF Route Distinguisher used in BMP messages for peers in this network-instance";
+      }
+      list station {
+        key "name";
+        max-elements 8;
+        description
+          "List of BMP collectors (stations)";
+        must "not(connection-mode = 'passive') or local-port" {
+          error-message "local-port must be configured when connection-mode is passive";
+        }
+        must 'not(local-address) or local-address != address' {
+          error-message "local-address cannot be the same as the collector address";
+        }
+        uses bmp-station-config;
+        uses bmp-statistics-reporting;
+        uses bmp-tcp-parameters;
+        uses bmp-station-state;
+        action reset {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-same-io";
+          description
+            "Execute the reset action
+
+             Reset the session to this BMP station
+
+             The current session is torn down (a Termination message is sent
+             to the collector when connected) and a new session is established.";
+        }
+        action debug {
+          srl-exts:telemetry-capability "unsupported";
+          if-feature "srl-feat:tools-as-modeled-actions-same-io";
+          description
+            "Execute the debug action
+
+             Enable or disable debugging for the session to this BMP station.
+
+             Specify the categories to enable; the debug state is set to exactly
+             the categories provided. Invoke with no category to disable all
+             debugging for the station. Debug output is written to the BGP debug
+             log subsystem.";
+          input {
+            leaf events {
+              type empty;
+              description
+                "Log BMP session state-machine and connection events";
+            }
+            leaf messages {
+              type empty;
+              description
+                "Log BMP messages (packets) sent to the collector";
+            }
+          }
+        }
+      }
+      uses bmp-statistics;
+      action reset {
+        srl-exts:telemetry-capability "unsupported";
+        if-feature "srl-feat:tools-as-modeled-actions-same-io";
+        description
+          "Execute the reset action
+
+           Reset the sessions to all BMP stations in the network-instance
+
+             Each session is torn down (a Termination message is sent to the
+             collector when connected) and a new session is established.";
+      }
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp" {
+    description
+      "Add BMP configuration and state under BGP";
+    if-feature "srl-feat:bgp-bmp";
+    uses bmp-top;
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:group/srl-bgp:afi-safi" {
+    description
+      "Add BMP monitoring configuration under peer-group AFI-SAFI";
+    if-feature "srl-feat:bgp-bmp";
+    uses bmp-monitor-group-neighbor;
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:neighbor/srl-bgp:afi-safi" {
+    description
+      "Add BMP monitoring configuration under neighbor AFI-SAFI";
+    if-feature "srl-feat:bgp-bmp";
+    uses bmp-monitor-group-neighbor;
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:neighbor/srl-bgp:afi-safi/srl-bgp-bmp:bmp/srl-bgp-bmp:monitor" {
+    description
+      "Add per-AFI-SAFI route monitoring message counter under neighbor BMP monitor";
+    if-feature "srl-feat:bgp-bmp";
+    leaf route-monitoring-messages-sent {
+      config false;
+      type srl-comm:zero-based-counter64;
+      description
+        "Number of route monitoring messages sent for this AFI-SAFI";
+    }
+  }
+
+  augment "/srl-netinst:network-instance/srl-netinst:protocols/srl-bgp:bgp/srl-bgp:neighbor" {
+    description
+      "Add BMP peer-up/peer-down timestamps under BGP neighbor";
+    if-feature "srl-feat:bgp-bmp";
+    uses bmp-monitor-state;
+  }
+}

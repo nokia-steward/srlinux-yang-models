@@ -1,0 +1,115 @@
+module openconfig-srl-augments {
+  yang-version 1;
+  namespace "urn:nokia.com:srlinux:openconfig:openconfig-srl-augments";
+  prefix oc-srl-aug;
+
+  import openconfig-interfaces {
+    prefix oc-ifs;
+  }
+  import openconfig-if-aggregate {
+    prefix oc-if-aggr;
+  }
+  import openconfig-if-ethernet {
+    prefix oc-if-ethe;
+  }
+  import openconfig-network-instance {
+    prefix oc-netinst;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "SRL augments to the OpenConfig models
+
+     Copyright 2022-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2024-07-31 {
+    description
+      "SR Linux 24.7.1";
+  }
+  revision 2022-03-31 {
+    description
+      "SR Linux 22.3.1";
+  }
+
+  extension no-globbing {
+    description
+      "Disables globbing for this leaf (useful for fields defining regex patterns)";
+  }
+
+  extension telemetry-capability {
+    description
+      "Takes as an argument a string describing one telemetry subscription capability
+       supported on this schema node.
+
+       Whilst similar to the stream-mode extension, which defines the default behaviour
+       when a gNMI client specifies TARGET_DEFINED as the stream mode, this extension
+       declares which subscription modes are permitted on the node, independent of
+       TARGET_DEFINED defaults.
+
+       Per RFC7950, each extension statement carries a single argument.  To declare
+       multiple capabilities on one node, use multiple telemetry-capability statements,
+       for example:
+
+         oc-srl-aug:telemetry-capability \"sample=1\";
+         oc-srl-aug:telemetry-capability \"on_change\";
+
+       Declared capabilities are inherited by all child nodes unless a more specific
+       telemetry-capability statement is set on a descendant.
+
+       Valid options are
+
+       sample=<n>
+         The node may be subscribed using sampled streaming with a minimum sample
+         period of n seconds (for example sample=1).
+
+       on_change
+         The node may be subscribed using on_change streaming, which sends updates
+         when values change.
+
+       target_defined
+         The node may be subscribed using target_defined streaming, which sends
+         updates according the the described stream-mode extension setting.
+
+       unsupported
+         The node does not support telemetry and cannot be subscribed to.
+
+       When no telemetry-capability statement is present on a node or any ancestor,
+       the effective capability set is sample=1, on_change and target_defined (all apply).";
+    argument capability;
+  }
+
+  grouping lag-augments {
+    leaf member-speed {
+      type identityref {
+        base oc-if-ethe:ETHERNET_SPEED;
+      }
+      description
+        "SRL mandates that a lag be configured with a speed.";
+    }
+  }
+
+  augment "/oc-ifs:interfaces/oc-ifs:interface/oc-if-aggr:aggregation/oc-if-aggr:config" {
+    uses lag-augments;
+  }
+
+  augment "/oc-ifs:interfaces/oc-ifs:interface/oc-if-aggr:aggregation/oc-if-aggr:state" {
+    uses lag-augments;
+  }
+
+  augment "/oc-netinst:network-instances/oc-netinst:network-instance/oc-netinst:protocols/oc-netinst:protocol/oc-netinst:isis/oc-netinst:levels/oc-netinst:level/oc-netinst:link-state-database/oc-netinst:lsp" {
+    oc-srl-aug:telemetry-capability "sample=1";
+  }
+
+  augment "/oc-netinst:network-instances/oc-netinst:network-instance/oc-netinst:protocols/oc-netinst:protocol/oc-netinst:bgp/oc-netinst:rib" {
+    oc-srl-aug:telemetry-capability "sample=1";
+  }
+}

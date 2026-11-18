@@ -1,0 +1,51 @@
+module srl_nokia-tools-system-network-instance-protocols {
+  yang-version 1.1;
+  namespace "urn:nokia.com:srlinux:general:tools-system-network-instance-protocols";
+  prefix srl-tool-sys-netinst-prot;
+
+  import srl_nokia-tools-system {
+    prefix srl-tool-sys;
+  }
+
+  organization
+    "Nokia";
+  contact
+    "Nokia SR Linux Support
+     Web: <http://www.nokia.com>";
+  description
+    "Tools related to the System Network Instance protocols
+
+     Copyright 2025-2026 Nokia. All rights reserved. Reproduction of this document
+     is authorized on the condition that the foregoing copyright notice is included.";
+
+  revision 2026-10-31 {
+    description
+      "SR Linux 26.10.1";
+  }
+  revision 2026-07-31 {
+    description
+      "SR Linux 26.7.1";
+  }
+  revision 2025-07-31 {
+    description
+      "SR Linux 25.7.1";
+  }
+
+  grouping tools-sys-net-inst-protocols-top {
+    container network-instance {
+      presence "Configure tools system network-instance";
+      description
+        "Enclosing container for system network-instance";
+      container protocols {
+        description
+          "Enter the protocols context
+
+           Enclosing container for system network-instance protocols";
+      }
+    }
+  }
+
+  augment "/srl-tool-sys:system" {
+    uses tools-sys-net-inst-protocols-top;
+  }
+}
